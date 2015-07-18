@@ -4,9 +4,11 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Enumeration;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import javax.swing.ListSelectionModel;
 import javax.swing.event.TableColumnModelListener;
 import javax.swing.table.DefaultTableColumnModel;
@@ -138,11 +140,17 @@ public class JBroTableColumnModel extends DefaultTableColumnModel {
   public List< JBroTableColumn > getColumnChildren( JBroTableColumn column ) {
     IModelFieldGroup modelField = getModelField( column );
     if ( modelField instanceof ModelFieldGroup ) {
+      int kidsLevel = column.getY() + column.getRowspan();
+      if ( kidsLevel >= columns.size() )
+        return Collections.EMPTY_LIST;
       ModelFieldGroup group = ( ModelFieldGroup )modelField;
-      ArrayList< JBroTableColumn > ret = new ArrayList< JBroTableColumn >( group.getColspan() );
-      for ( IModelFieldGroup child : group.getChildren() ) {
-        JBroTableColumn childColumn = getTableColumn( child );
-        if ( childColumn != null )
+      List< JBroTableColumn > ret = new ArrayList< JBroTableColumn >( group.getColspan() );
+      Set< String > ids = new HashSet< String >( group.getColspan() );
+      for ( IModelFieldGroup child : group.getChildren() )
+        ids.add( child.getIdentifier() );
+      List< JBroTableColumn > childrenCandidates = columns.get( kidsLevel );
+      for ( JBroTableColumn childColumn : childrenCandidates ) {
+        if ( ids.contains( childColumn.getIdentifier() ) )
           ret.add( childColumn );
       }
       return ret;

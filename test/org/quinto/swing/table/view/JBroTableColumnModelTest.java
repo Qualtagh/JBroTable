@@ -41,22 +41,21 @@ public class JBroTableColumnModelTest {
   
   @Before
   public void setUp() {
-    int columnWidth = 30;
     IModelFieldGroup groups[] = new IModelFieldGroup[] {
       new ModelFieldGroup( "A", "A" )
-        .withChild( new ModelField( "B", "B" ).withDefaultWidth( columnWidth ) )
-        .withChild( new ModelField( "C", "C" ).withDefaultWidth( columnWidth ).withRowspan( 2 ) ),
+        .withChild( new ModelField( "B", "B" ) )
+        .withChild( new ModelField( "C", "C" ).withRowspan( 2 ) ),
       new ModelFieldGroup( "D", "D" )
-        .withChild( new ModelField( "E", "E" ).withDefaultWidth( columnWidth ) )
-        .withChild( new ModelField( "F", "F" ).withDefaultWidth( columnWidth ) ),
-      new ModelField( "G", "G" ).withDefaultWidth( columnWidth ),
+        .withChild( new ModelField( "E", "E" ) )
+        .withChild( new ModelField( "F", "F" ) ),
+      new ModelField( "G", "G" ),
       new ModelFieldGroup( "H", "H" )
         .withChild( new ModelFieldGroup( "I", "I" )
-                      .withChild( new ModelField( "J", "J" ).withDefaultWidth( columnWidth ) ) )
-        .withChild( new ModelField( "K", "K" ).withDefaultWidth( columnWidth ) )
+                      .withChild( new ModelField( "J", "J" ) ) )
+        .withChild( new ModelField( "K", "K" ) )
         .withChild( new ModelFieldGroup( "L", "L" )
-                      .withChild( new ModelField( "M", "M" ).withDefaultWidth( columnWidth ) )
-                      .withChild( new ModelField( "N", "N" ).withDefaultWidth( columnWidth ) ) )
+                      .withChild( new ModelField( "M", "M" ) )
+                      .withChild( new ModelField( "N", "N" ) ) )
     };
     data = new ModelData( groups );
     ModelField fields[] = ModelFieldGroup.getBottomFields( groups );
@@ -69,7 +68,6 @@ public class JBroTableColumnModelTest {
     data.setRows( rows );
     table = new JBroTable( data );
    // table.setAutoCreateRowSorter( true );
-    table.setAutoResizeMode( JTable.AUTO_RESIZE_OFF );
   }
   
   @After

@@ -17,7 +17,10 @@ import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.Enumeration;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.logging.Level;
 import javax.swing.CellRendererPane;
 import javax.swing.JComponent;
 import javax.swing.JScrollPane;
@@ -30,6 +33,8 @@ import javax.swing.UIManager;
 import javax.swing.event.MouseInputListener;
 import javax.swing.plaf.ComponentUI;
 import javax.swing.plaf.basic.BasicTableHeaderUI;
+import javax.swing.plaf.metal.MetalLookAndFeel;
+import javax.swing.plaf.metal.MetalTheme;
 import javax.swing.plaf.nimbus.NimbusStyle;
 import javax.swing.table.JTableHeader;
 import javax.swing.table.TableCellRenderer;
@@ -40,9 +45,11 @@ import org.quinto.swing.table.model.IModelFieldGroup;
 public class JBroTableHeaderUI extends BasicTableHeaderUI {
   private static final Logger LOGGER = Logger.getLogger( JBroTableHeaderUI.class );
   private static final Cursor resizeCursor = Cursor.getPredefinedCursor( Cursor.E_RESIZE_CURSOR );
+  private static final Map< String, Boolean > EXISTING_PARENT_UIS = new HashMap< String, Boolean >();
   
   private JBroTableColumn selectedColumn;
   private LookAndFeel lookAndFeel;
+  private MetalTheme metalTheme;
   private final PropertyChangeListener listener;
   private final JBroTable table;
   private List< ComponentUI > delegates;
@@ -69,10 +76,13 @@ public class JBroTableHeaderUI extends BasicTableHeaderUI {
   
   private void updateLookAndFeel() {
     LookAndFeel newLookAndFeel = UIManager.getLookAndFeel();
-    if ( lookAndFeel == null || !newLookAndFeel.getName().equals( lookAndFeel.getName() ) ) {
+    if ( lookAndFeel == null || !newLookAndFeel.getName().equals( lookAndFeel.getName() ) || newLookAndFeel instanceof MetalLookAndFeel &&
+       ( metalTheme == null || !MetalLookAndFeel.getCurrentTheme().getName().equals( metalTheme.getName() ) ) ) {
       if ( header != null )
         uninstallUI( header );
       lookAndFeel = newLookAndFeel;
+      if ( lookAndFeel instanceof MetalLookAndFeel )
+        metalTheme = MetalLookAndFeel.getCurrentTheme();
       if ( header != null )
         installUI( header );
     }
@@ -115,6 +125,28 @@ public class JBroTableHeaderUI extends BasicTableHeaderUI {
       LOGGER.error( null, e );
     }
     return null;
+  }
+  
+  private void setField( String fieldName, Object value, ComponentUI ui ) {
+    if ( ui == null )
+      return;
+    try {
+      Field field = BasicTableHeaderUI.class.getDeclaredField( fieldName );
+      boolean accessible = field.isAccessible();
+      if ( !accessible )
+        field.setAccessible( true );
+      field.set( ui, value );
+      if ( !accessible )
+        field.setAccessible( false );
+    } catch ( IllegalAccessException e ) {
+      LOGGER.error( null, e );
+    } catch ( IllegalArgumentException e ) {
+      LOGGER.error( null, e );
+    } catch ( NoSuchFieldException e ) {
+      LOGGER.error( null, e );
+    } catch ( SecurityException e ) {
+      LOGGER.error( null, e );
+    }
   }
   
   private Object call( String methodName, ComponentUI ui ) {
@@ -258,6 +290,8 @@ public class JBroTableHeaderUI extends BasicTableHeaderUI {
     updateModel();
     super.installUI( c );
     SwingUtilities.updateComponentTreeUI( header );
+    for ( JTableHeader delegateHeader : headers )
+      SwingUtilities.updateComponentTreeUI( delegateHeader );
   }
   
   @Override
@@ -281,7 +315,7 @@ public class JBroTableHeaderUI extends BasicTableHeaderUI {
 
   @Override
   public void paint( Graphics g, JComponent c ) {
-    JBroTableColumnModel groupModel = getJBroTableColumnModel();
+    JBroTableColumnModel groupModel = getTableColumnModel();
     if ( groupModel == null )
       return;
     JBroTableHeader header = getHeader();
@@ -365,13 +399,15 @@ public class JBroTableHeaderUI extends BasicTableHeaderUI {
 
   private void paintCell( Graphics g, Rectangle cellRect, JBroTableColumn group ) {
     TableCellRenderer renderer = getRenderer( group );
-    Component component = renderer.getTableCellRendererComponent( header.getTable(), group.getHeaderValue(), group == selectedColumn, group == selectedColumn, group.getY(), getJBroTableColumnModel().getColumnRelativeIndex( group ) );
+    boolean parentUIdeterminesRolloverColumnItself = hasParentUI( renderer );
+    boolean rollover = !parentUIdeterminesRolloverColumnItself && group == selectedColumn;
+    Component component = renderer.getTableCellRendererComponent( header.getTable(), group.getHeaderValue(), rollover, rollover, group.getY(), getTableColumnModel().getColumnRelativeIndex( group ) );
     paintCell( g, component, cellRect );
   }
 
   public Dimension getGroupSize( JBroTableColumn group ) {
     Dimension size = new Dimension();
-    JBroTableColumnModel groupModel = getJBroTableColumnModel();
+    JBroTableColumnModel groupModel = getTableColumnModel();
     for ( int level = group.getY(); level < group.getY() + group.getRowspan(); level++ ) {
       if ( rowHeights != null && rowHeights.size() > level ) {
         Integer height = rowHeights.get( level );
@@ -395,7 +431,7 @@ public class JBroTableHeaderUI extends BasicTableHeaderUI {
 
   private int calculateHeaderHeight() {
     int mHeight = 0;
-    JBroTableColumnModel groupModel = getJBroTableColumnModel();
+    JBroTableColumnModel groupModel = getTableColumnModel();
     for ( int column = 0; column < groupModel.getColumnCount(); column++ ) {
       int cHeight = 0;
       JBroTableColumn parent = groupModel.getColumn( column );
@@ -427,7 +463,7 @@ public class JBroTableHeaderUI extends BasicTableHeaderUI {
         return extra + height;
     }
     int mHeight = 0;
-    JBroTableColumnModel groupModel = getJBroTableColumnModel();
+    JBroTableColumnModel groupModel = getTableColumnModel();
     for ( int column = 0; column < groupModel.getColumnCount(); column++ ) {
       JBroTableColumn parent = groupModel.getColumn( column );
       while ( parent != null ) {
@@ -465,12 +501,68 @@ public class JBroTableHeaderUI extends BasicTableHeaderUI {
         Rectangle repaintRect = getGroupHeaderBoundsFor( newSelectedColumn );
         header.repaint( repaintRect );
       }
-      JBroTableColumnModel columnModel = getJBroTableColumnModel();
+      JBroTableColumnModel columnModel = getTableColumnModel();
       rolloverColumnUpdated( columnModel.getColumnAbsoluteIndex( oldSelectedColumn ), columnModel.getColumnAbsoluteIndex( newSelectedColumn ) );
+      if ( oldSelectedColumn != null && newSelectedColumn != null && oldSelectedColumn.getY() != newSelectedColumn.getY() ) {
+        BasicTableHeaderUI parentUI = getParentUI( getRenderer( oldSelectedColumn ) );
+        setField( "rolloverColumn", -1, parentUI );
+      }
+      if ( oldSelectedColumn != null || newSelectedColumn != null ) {
+        BasicTableHeaderUI parentUI = getParentUI( getRenderer( newSelectedColumn == null ? oldSelectedColumn : newSelectedColumn ) );
+        setField( "rolloverColumn", columnModel.getColumnRelativeIndex( newSelectedColumn ), parentUI );
+      }
     }
   }
+  
+  private boolean hasParentUI( TableCellRenderer renderer ) {
+    if ( renderer == null )
+      return false;
+    Class clazz = renderer.getClass();
+    String className = clazz.getName();
+    Boolean parentUIexists = EXISTING_PARENT_UIS.get( className );
+    if ( parentUIexists != null )
+      return parentUIexists;
+    getParentUI( renderer );
+    parentUIexists = EXISTING_PARENT_UIS.get( className );
+    if ( parentUIexists != null )
+      return parentUIexists;
+    return false;
+  }
+  
+  private BasicTableHeaderUI getParentUI( TableCellRenderer renderer ) {
+    if ( renderer == null )
+      return null;
+    Class clazz = renderer.getClass();
+    String className = clazz.getName();
+    try {
+      Boolean parentUIexists = EXISTING_PARENT_UIS.get( className );
+      if ( parentUIexists != null && !parentUIexists )
+        return null;
+      Field field = clazz.getDeclaredField( "this$0" );
+      boolean accessible = field.isAccessible();
+      if ( !accessible )
+        field.setAccessible( true );
+      Object ret = field.get( renderer );
+      if ( !accessible )
+        field.setAccessible( false );
+      if ( ret instanceof BasicTableHeaderUI ) {
+        EXISTING_PARENT_UIS.put( className, Boolean.TRUE );
+        return ( BasicTableHeaderUI )ret;
+      }
+    } catch ( NoSuchFieldException e ) {
+      // do nothing
+    } catch ( SecurityException e ) {
+      LOGGER.error( null, e );
+    } catch ( IllegalArgumentException e ) {
+      LOGGER.error( null, e );
+    } catch ( IllegalAccessException e ) {
+      LOGGER.error( null, e );
+    }
+    EXISTING_PARENT_UIS.put( className, Boolean.FALSE );
+    return null;
+  }
 
-  private JBroTableColumnModel getJBroTableColumnModel() {
+  private JBroTableColumnModel getTableColumnModel() {
     return ( JBroTableColumnModel )header.getColumnModel();
   }
 
@@ -490,7 +582,7 @@ public class JBroTableHeaderUI extends BasicTableHeaderUI {
   public JBroTableColumn getColumnAtPoint( Point point ) {
     int col = header.columnAtPoint( point );
     int level = getRowAtPoint( point );
-    return getJBroTableColumnModel().getColumnAtAbsolutePosition( col, level );
+    return getTableColumnModel().getColumnAtAbsolutePosition( col, level );
   }
 
   private int changeColumnWidth( JBroTableColumn resizingColumn, JTableHeader th, int oldWidth, int newWidth ) {
@@ -539,7 +631,7 @@ public class JBroTableHeaderUI extends BasicTableHeaderUI {
   public Rectangle getGroupHeaderBoundsFor( JBroTableColumn group ) {
     if ( group == null )
       return new Rectangle();
-    JBroTableColumnModel columnModel = getJBroTableColumnModel();
+    JBroTableColumnModel columnModel = getTableColumnModel();
     Dimension size = getGroupSize( group );
     Rectangle bounds = new Rectangle( size );
     bounds.y = 0;
@@ -601,7 +693,7 @@ public class JBroTableHeaderUI extends BasicTableHeaderUI {
       int column = getResizingColumnIndex( p );
       if ( column == -1 )
         return null;
-      JBroTableColumnModel columnModel = getJBroTableColumnModel();
+      JBroTableColumnModel columnModel = getTableColumnModel();
       return columnModel.getColumnAtAbsolutePosition( column, row );
     }
 
@@ -613,7 +705,7 @@ public class JBroTableHeaderUI extends BasicTableHeaderUI {
       if ( column == -1 )
         return -1;
       JBroTableHeader header = getHeader();
-      JBroTableColumnModel columnModel = getJBroTableColumnModel();
+      JBroTableColumnModel columnModel = getTableColumnModel();
       JBroTableColumn dtc = columnModel.getColumnAtAbsolutePosition( column, row );
       Rectangle r = getGroupHeaderBoundsFor( dtc );
       r.grow( -3, 0 );
@@ -637,7 +729,7 @@ public class JBroTableHeaderUI extends BasicTableHeaderUI {
       header.setDraggedDistance( 0 );
       Point point = e.getPoint();
       int idx = getResizingColumnIndex( point );
-      JBroTableColumn resizingColumn = idx < 0 ? null : getJBroTableColumnModel().getColumn( idx );
+      JBroTableColumn resizingColumn = idx < 0 ? null : getTableColumnModel().getColumn( idx );
       if ( canResize( point, resizingColumn, header ) ) {
         header.setResizingColumn( resizingColumn );
         if ( header.getComponentOrientation().isLeftToRight() )
@@ -682,7 +774,7 @@ public class JBroTableHeaderUI extends BasicTableHeaderUI {
       JBroTableColumn resizingColumn = header.getResizingColumn();
       JBroTableColumn draggedColumn = header.getDraggedGroup();
       boolean headerLeftToRight = header.getComponentOrientation().isLeftToRight();
-      JBroTableColumnModel groupModel = getJBroTableColumnModel();
+      JBroTableColumnModel groupModel = getTableColumnModel();
       if ( draggedColumn != null ) {
         int startIndex = groupModel.getColumnAbsoluteIndex( draggedColumn );
         int endIndex = startIndex + draggedColumn.getColspan() - 1;

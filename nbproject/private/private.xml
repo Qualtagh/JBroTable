@@ -3,9 +3,10 @@
     <editor-bookmarks xmlns="http://www.netbeans.org/ns/editor-bookmarks/2" lastBookmarkId="0"/>
     <open-files xmlns="http://www.netbeans.org/ns/projectui-open-files/2">
         <group>
-            <file>file:/C:/Users/Jelly/Netbeans%20Projects/JBroTable/src/org/sng/alfa/vcl/swing/JBroTableHeaderUI.java</file>
-            <file>file:/C:/Users/Jelly/Netbeans%20Projects/JBroTable/test/org/sng/alfa/vcl/swing/JBroTableColumnModelShowcase.java</file>
-            <file>file:/C:/Users/Jelly/Netbeans%20Projects/JBroTable/src/org/sng/alfa/vcl/swing/JBroTableHeader.java</file>
+            <file>file:/C:/Users/Jelly/AndroidStudioProjects/JBroTable/test/org/quinto/swing/table/view/JBroTableColumnModelShowcase.java</file>
+            <file>file:/C:/Users/Jelly/AndroidStudioProjects/JBroTable/test/org/quinto/swing/table/view/JBroTableColumnTest.java</file>
+            <file>file:/C:/Users/Jelly/AndroidStudioProjects/JBroTable/test/org/quinto/swing/table/view/JBroTableUIShowcase.java</file>
+            <file>file:/C:/Users/Jelly/AndroidStudioProjects/JBroTable/test/org/quinto/swing/table/view/JBroTableColumnModelTest.java</file>
         </group>
     </open-files>
 </project-private>

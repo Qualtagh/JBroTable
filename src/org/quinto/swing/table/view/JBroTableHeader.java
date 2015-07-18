@@ -243,17 +243,16 @@ public class JBroTableHeader extends JTableHeader {
 
     @Override
     public void updateUI() {
-      JBroTableHeader.this.updateUI();
+      super.updateUI();
     }
 
     @Override
     public void setUI( TableHeaderUI ui ) {
-      JBroTableHeader.this.setUI( ui );
     }
 
     @Override
     public TableHeaderUI getUI() {
-      return JBroTableHeader.this.getUI();
+      return super.getUI();
     }
 
     @Override
@@ -928,7 +927,6 @@ public class JBroTableHeader extends JTableHeader {
 
     @Override
     protected void setUI( ComponentUI newUI ) {
-      JBroTableHeader.this.setUI( newUI );
     }
 
     @Override

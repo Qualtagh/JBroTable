@@ -1,5 +1,5 @@
 # JBroTable
-JTable with a groupable header
+JTable with a groupable header.
 
 The implementation is based on [this](http://stackoverflow.com/a/20208995/4540645) StackOverflow answer by [MadProgrammer](http://stackoverflow.com/users/992484/madprogrammer).
 
@@ -23,27 +23,32 @@ New features:
 - Easy to use table model API
 - Table header cells highlighting on mouse over
 - Table cells spans API to merge cells inside a table itself (not in a header)
+- Partial test coverage
 - Setting custom rowspan. Rowspan is calculated automatically in a greedy way, but sometimes such a picture is needed (and it can't be calculated automatically):
 
 ![Rowspan](/github/rowspan.png)
 
 ASCII (if a picture is not shown):
+
+```
     +-------+-------+
     | A     | D     |
     +---+---+       |
     | B | C +---+---+
     |   |   | E | F |
     +---+---+---+---+
+```
 
 Dependencies:
 - Java 6 and higher
 - Apache Log4J
 - JUnit (for tests only)
 
-[Animated demo](/github/demo.gif) (1.6M)
+[__Animated demo__](/github/demo.gif) (1.6M)
 
 Sample usage:
 
+```java
     package org.quinto.swing.table.view;
 
     import java.awt.FlowLayout;
@@ -100,6 +105,7 @@ Sample usage:
         frame.setVisible( true );
       }
     }
+```
 
 Result (Windows 8 theme):
 

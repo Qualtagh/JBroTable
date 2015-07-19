@@ -32,8 +32,9 @@ ASCII (if a picture is not shown):
 
 ```
 +-------+-------+
-| A     | D     |
-+---+---+       |
+| A     |       |
++---+---+ D     |
+|   |   |       |
 | B | C +---+---+
 |   |   | E | F |
 +---+---+---+---+
@@ -66,6 +67,9 @@ public class Sample {
     UIManager.setLookAndFeel( UIManager.getSystemLookAndFeelClassName() );
 
     // Hierarchically create columns and column groups.
+    // Each node of columns tree is an instance of IModelFieldGroup.
+    // Leafs are always ModelFields.
+    // Roots can be either ModelFields or ModelFieldGroups.
     IModelFieldGroup groups[] = new IModelFieldGroup[] {
       new ModelFieldGroup( "A", "A" )
         .withChild( new ModelField( "B", "B" ) )
@@ -82,9 +86,10 @@ public class Sample {
                       .withChild( new ModelField( "M", "M" ) )
                       .withChild( new ModelField( "N", "N" ) ) )
     };
-    ModelData data = new ModelData( groups );
-    ModelField fields[] = ModelFieldGroup.getBottomFields( groups );
 
+    // Get leafs of columns tree.
+    ModelField fields[] = ModelFieldGroup.getBottomFields( groups );
+    
     // Sample data.
     ModelRow rows[] = new ModelRow[ 10 ];
     for ( int i = 0; i < rows.length; i++ ) {
@@ -92,6 +97,9 @@ public class Sample {
       for ( int j = 0; j < fields.length; j++ )
         rows[ i ].setValue( j, fields[ j ].getCaption() + i );
     }
+    
+    // Table.
+    ModelData data = new ModelData( groups );
     data.setRows( rows );
     JBroTable table = new JBroTable( data );
 

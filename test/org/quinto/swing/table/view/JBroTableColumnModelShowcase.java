@@ -3,6 +3,8 @@ package org.quinto.swing.table.view;
 import com.sun.java.swing.plaf.motif.MotifLookAndFeel;
 import com.sun.java.swing.plaf.windows.WindowsClassicLookAndFeel;
 import com.sun.java.swing.plaf.windows.WindowsLookAndFeel;
+import java.awt.Color;
+import java.awt.Dimension;
 import java.awt.FlowLayout;
 import java.awt.Toolkit;
 import java.awt.event.ActionEvent;
@@ -16,6 +18,7 @@ import javax.swing.JFrame;
 import javax.swing.JScrollPane;
 import javax.swing.JTable;
 import javax.swing.SwingUtilities;
+import javax.swing.UIDefaults;
 import javax.swing.UIManager;
 import javax.swing.UnsupportedLookAndFeelException;
 import javax.swing.plaf.metal.DefaultMetalTheme;
@@ -118,9 +121,9 @@ public class JBroTableColumnModelShowcase {
     ModelFieldGroup groupB = new ModelFieldGroup( "GB", "GB" );
     for ( int i = 5; i < 9; i++ )
       groupB.withChild( fields[ i ] );
-    ModelFieldGroup groupС = new ModelFieldGroup( "GС", "GС" );
-    groupС.withChild( fields[ 4 ] );
-    groupС.withChild( groupB );
+    ModelFieldGroup groupC = new ModelFieldGroup( "GC", "GC" );
+    groupC.withChild( fields[ 4 ] );
+    groupC.withChild( groupB );
     ModelData data = new ModelData( fields );
     System.out.println( data.getHeaderString() );
     ModelRow rows[] = new ModelRow[ rowCnt ];
@@ -131,6 +134,7 @@ public class JBroTableColumnModelShowcase {
     }
     data.setRows( rows );
     table = new JBroTable( data );
+    table.setUI( new JBroTableUI() );
    // table.setAutoCreateRowSorter( true );
     System.out.println( table.getColumnModel() );
     for ( TableColumn tc : Collections.list( table.getColumnModel().getColumns() ) )

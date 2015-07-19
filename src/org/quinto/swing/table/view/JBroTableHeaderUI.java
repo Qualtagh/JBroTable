@@ -20,7 +20,6 @@ import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.logging.Level;
 import javax.swing.CellRendererPane;
 import javax.swing.JComponent;
 import javax.swing.JScrollPane;
@@ -400,7 +399,7 @@ public class JBroTableHeaderUI extends BasicTableHeaderUI {
   private void paintCell( Graphics g, Rectangle cellRect, JBroTableColumn group ) {
     TableCellRenderer renderer = getRenderer( group );
     boolean parentUIdeterminesRolloverColumnItself = hasParentUI( renderer );
-    boolean rollover = !parentUIdeterminesRolloverColumnItself && group == selectedColumn;
+    boolean rollover = parentUIdeterminesRolloverColumnItself ? group == getHeader().getDraggedGroup() : group == selectedColumn;
     Component component = renderer.getTableCellRendererComponent( header.getTable(), group.getHeaderValue(), rollover, rollover, group.getY(), getTableColumnModel().getColumnRelativeIndex( group ) );
     paintCell( g, component, cellRect );
   }
@@ -514,7 +513,7 @@ public class JBroTableHeaderUI extends BasicTableHeaderUI {
     }
   }
   
-  private boolean hasParentUI( TableCellRenderer renderer ) {
+  protected static boolean hasParentUI( TableCellRenderer renderer ) {
     if ( renderer == null )
       return false;
     Class clazz = renderer.getClass();
@@ -529,7 +528,7 @@ public class JBroTableHeaderUI extends BasicTableHeaderUI {
     return false;
   }
   
-  private BasicTableHeaderUI getParentUI( TableCellRenderer renderer ) {
+  private static BasicTableHeaderUI getParentUI( TableCellRenderer renderer ) {
     if ( renderer == null )
       return null;
     Class clazz = renderer.getClass();

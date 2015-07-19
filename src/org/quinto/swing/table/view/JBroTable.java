@@ -3,6 +3,7 @@ package org.quinto.swing.table.view;
 import java.awt.Dimension;
 import java.awt.Font;
 import java.awt.FontMetrics;
+import java.awt.Rectangle;
 import java.awt.Toolkit;
 import java.util.ArrayList;
 import java.util.Iterator;
@@ -16,6 +17,7 @@ import javax.swing.event.ListSelectionEvent;
 import javax.swing.event.TableColumnModelEvent;
 import javax.swing.event.TableColumnModelListener;
 import javax.swing.plaf.TableHeaderUI;
+import javax.swing.plaf.TableUI;
 import javax.swing.table.JTableHeader;
 import javax.swing.table.TableColumn;
 import javax.swing.table.TableColumnModel;
@@ -38,8 +40,29 @@ public class JBroTable extends JTable {
   
   public JBroTable( ModelData data ) {
     super( new JBroTableModel( data ) );
+    setShowGrid( true );
+    setIntercellSpacing( new Dimension( 1, 1 ) );
+    super.setUI( new JBroTableUI() );
     checkFieldWidths();
     refresh();
+  }
+
+  @Override
+  public void setUI( TableUI ui ) {
+    if ( ui instanceof JBroTableUI )
+      super.setUI( ui );
+    else {
+      JBroTableUI oldUI = getUI();
+      if ( oldUI != null ) {
+        super.setUI( ui );
+        super.setUI( oldUI );
+      }
+    }
+  }
+
+  @Override
+  public JBroTableUI getUI() {
+    return ( JBroTableUI )super.getUI();
   }
 
   /**
@@ -476,6 +499,22 @@ public class JBroTable extends JTable {
       return super.createDefaultTableHeader();
     JBroTableColumnModel gcm = ( JBroTableColumnModel )m;
     return new JBroTableHeader( gcm );
+  }
+
+  @Override
+  public void columnSelectionChanged( ListSelectionEvent e ) {
+    if ( getRowSelectionAllowed() ) {
+      int leadRow = selectionModel.getLeadSelectionIndex();
+      if ( leadRow >= 0 && leadRow < getRowCount() ) {
+        Rectangle first = getUI().getSpanCoordinates( e.getFirstIndex(), leadRow );
+        Rectangle last = getUI().getSpanCoordinates( e.getLastIndex(), leadRow );
+        first = first.x < 0 || first.y < 0 ? last : last.x < 0 || last.y < 0 ? first : first.union( last );
+        if ( first.x >= 0 && first.width > 1 ) {
+          e = new ListSelectionEvent( e.getSource(), first.x, first.x + first.width - 1, e.getValueIsAdjusting() );
+        }
+      }
+    }
+    super.columnSelectionChanged( e );
   }
   
   private class HeaderHeightWatcher implements TableColumnModelListener {

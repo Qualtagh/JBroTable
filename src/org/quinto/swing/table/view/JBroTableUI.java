@@ -203,7 +203,14 @@ public class JBroTableUI extends BasicTableUI {
     int rowCount = table.getRowCount();
     int columnCount = table.getColumnCount();
     ModelData data = ( ( JBroTable )table ).getData();
+    Rectangle focusedRegion = new Rectangle( -1, -1, -1, -1 );
+    if ( table.isFocusOwner() ) {
+      focusedRegion = getSpanCoordinates( table.getColumnModel().getSelectionModel().getLeadSelectionIndex(), table.getSelectionModel().getLeadSelectionIndex() );
+      focusedRegion.width += focusedRegion.x;
+      focusedRegion.height += focusedRegion.y;
+    }
     for ( int row = rMin; row <= rMax; row++ ) {
+      int modelRow = table.convertRowIndexToModel( row );
       cellRect = table.getCellRect( row, cMin, false );
       for ( int column = cMin; column <= cMax; column++ ) {
         aColumn = cm.getColumn( column );
@@ -225,7 +232,7 @@ public class JBroTableUI extends BasicTableUI {
                 int idIdx = data.getIndexOfModelField( idColumn );
                 if ( idIdx < 0 )
                   continue;
-                Object id = data.getValue( row, idIdx );
+                Object id = data.getValue( modelRow, idIdx );
                 if ( id == null )
                   continue;
                 ModelSpan span = spanWithId.getValue();
@@ -248,7 +255,7 @@ public class JBroTableUI extends BasicTableUI {
                 }
                 int fromRow = row - 1;
                 for ( ; fromRow >= 0; fromRow-- ) {
-                  if ( !id.equals( data.getValue( fromRow, idIdx ) ) )
+                  if ( !id.equals( data.getValue( table.convertRowIndexToModel( fromRow ), idIdx ) ) )
                     break;
                   int height = table.getRowHeight( fromRow );
                   spannedCellRect.height += height;
@@ -256,7 +263,7 @@ public class JBroTableUI extends BasicTableUI {
                 }
                 int toRow = row + 1;
                 for ( ; toRow < rowCount; toRow++ ) {
-                  if ( !id.equals( data.getValue( toRow, idIdx ) ) )
+                  if ( !id.equals( data.getValue( table.convertRowIndexToModel( toRow ), idIdx ) ) )
                     break;
                   spannedCellRect.height += table.getRowHeight( toRow );
                 }
@@ -270,7 +277,7 @@ public class JBroTableUI extends BasicTableUI {
                   }
                 }
                 valueInitialized = true;
-                value = data.getValue( row, span.getValueColumn() );
+                value = data.getValue( modelRow, span.getValueColumn() );
                 drawAsHeader = span.isDrawAsHeader();
                 break;
               }
@@ -281,7 +288,7 @@ public class JBroTableUI extends BasicTableUI {
               spannedCellRect.height += table.getRowMargin();
               spannedCellRect.width += columnMargin;
             }
-            paintCell( g, spannedCellRect, row, column, value, drawAsHeader );
+            paintCell( g, spannedCellRect, row, column, value, drawAsHeader, focusedRegion.x <= column && column < focusedRegion.width && focusedRegion.y <= row && row < focusedRegion.height );
           }
         }
         cellRect.x += columnWidth;
@@ -350,7 +357,7 @@ public class JBroTableUI extends BasicTableUI {
     component.validate();
   }
 
-  private void paintCell( Graphics g, Rectangle cellRect, int row, int column, Object value, boolean drawAsHeader ) {
+  private void paintCell( Graphics g, Rectangle cellRect, int row, int column, Object value, boolean drawAsHeader, boolean hasFocus ) {
     TableCellRenderer renderer = null;
     JTableHeader header = null;
     if ( drawAsHeader ) {
@@ -370,12 +377,14 @@ public class JBroTableUI extends BasicTableUI {
       header = null;
     }
     boolean isSelected = table.isCellSelected( row, column );
-    boolean hasFocus = table.getSelectionModel().getLeadSelectionIndex() == row
-      && table.getColumnModel().getSelectionModel().getLeadSelectionIndex() == column
-      && table.isFocusOwner();
     if ( header != null ) {
+      boolean parentUIdeterminesRolloverColumnItself = JBroTableHeaderUI.hasParentUI( renderer );
       row = -2;
-      column = -2;
+      if ( parentUIdeterminesRolloverColumnItself && isSelected ) {
+        column = -1;
+        isSelected = false;
+      } else
+        column = -2;
       if ( !hasFocus )
         hasFocus = isSelected;
     }
@@ -398,9 +407,89 @@ public class JBroTableUI extends BasicTableUI {
         columnSpans = new LinkedHashMap< String, ModelSpan >();
         spans.put( column, columnSpans );
       }
-      if ( columnSpans.put( span.getIdColumn(), span ) != null )
-        throw new IllegalArgumentException( "Span column intersection: " + span );
+      ModelSpan prev = columnSpans.put( span.getIdColumn(), span );
+      if ( prev != null )
+        throw new IllegalArgumentException( "Span column intersection: column " + column + " is used in both spans " + prev + " and " + span );
     }
     return this;
+  }
+  
+  /**
+   * Find a span at position ( col, row ). Return its starting point and size in cells.
+   * The value returned is <b>not</b> the span bounds in pixels.
+   * @param col any column of span
+   * @param row any row of span
+   * @return a rectangle( min column of this span, min row of this span, columns quantity of this span, rows quantity of this span ),
+   * or rectangle( col, row, 1, 1 ) if there's no span at ( col, row )
+   */
+  public Rectangle getSpanCoordinates( int col, int row ) {
+    Rectangle ret = new Rectangle( col, row, 1, 1 );
+    if ( col < 0 || row < 0 )
+      return ret;
+    TableColumnModel cm = table.getColumnModel();
+    if ( cm == null )
+      return ret;
+    int columnCount = cm.getColumnCount();
+    if ( col >= columnCount )
+      return ret;
+    TableColumn aColumn = cm.getColumn( col );
+    if ( aColumn == null )
+      return ret;
+    String columnName = ( String )aColumn.getIdentifier();
+    Map< String, ModelSpan > columnSpans = spans.get( columnName );
+    if ( columnSpans == null )
+      return ret;
+    int rowCount = table.getRowCount();
+    if ( row >= rowCount )
+      return ret;
+    int modelRow = table.convertRowIndexToModel( row );
+    if ( modelRow < 0 )
+      return ret;
+    ModelData data = ( ( JBroTable )table ).getData();
+    if ( data == null || modelRow >= data.getRowsCount() )
+      return ret;
+    for ( Map.Entry< String, ModelSpan > spanWithId : columnSpans.entrySet() ) {
+      int idColumnIdx = data.getIndexOfModelField( spanWithId.getKey() );
+      if ( idColumnIdx < 0 )
+        continue;
+      Object id = data.getValue( modelRow, idColumnIdx );
+      if ( id == null )
+        continue;
+      int minRow = row;
+      for ( int i = row - 1; i >= 0; i-- ) {
+        if ( id.equals( data.getValue( table.convertRowIndexToModel( i ), idColumnIdx ) ) )
+          minRow = i;
+        else
+          break;
+      }
+      int maxRow = row;
+      for ( int i = row + 1; i < rowCount; i++ ) {
+        if ( id.equals( data.getValue( table.convertRowIndexToModel( i ), idColumnIdx ) ) )
+          maxRow = i;
+        else
+          break;
+      }
+      ModelSpan span = spanWithId.getValue();
+      Set< String > columns = span.getColumns();
+      int minCol = col;
+      for ( int i = col - 1; i >= 0; i-- ) {
+        TableColumn spanCoveredColumn = cm.getColumn( i );
+        if ( columns.contains( ( String )spanCoveredColumn.getIdentifier() ) )
+          minCol = i;
+        else
+          break;
+      }
+      int maxCol = col;
+      for ( int i = col + 1; i < columnCount; i++ ) {
+        TableColumn spanCoveredColumn = cm.getColumn( i );
+        if ( columns.contains( ( String )spanCoveredColumn.getIdentifier() ) )
+          maxCol = i;
+        else
+          break;
+      }
+      ret.setBounds( minCol, minRow, maxCol - minCol + 1, maxRow - minRow + 1 );
+      break;
+    }
+    return ret;
   }
 }

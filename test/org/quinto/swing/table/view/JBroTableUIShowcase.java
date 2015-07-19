@@ -1,8 +1,13 @@
 package org.quinto.swing.table.view;
 
+import com.sun.java.swing.plaf.windows.WindowsClassicLookAndFeel;
+import com.sun.java.swing.plaf.windows.WindowsLookAndFeel;
 import java.awt.FlowLayout;
+import javax.swing.DefaultListSelectionModel;
 import javax.swing.JFrame;
 import javax.swing.JScrollPane;
+import javax.swing.UIManager;
+import javax.swing.plaf.nimbus.NimbusLookAndFeel;
 import org.quinto.swing.table.model.ModelData;
 import org.quinto.swing.table.model.ModelField;
 import org.quinto.swing.table.model.ModelFieldGroup;
@@ -11,7 +16,8 @@ import org.quinto.swing.table.model.IModelFieldGroup;
 import org.quinto.swing.table.model.ModelSpan;
 
 public class JBroTableUIShowcase {
-  public static void main( String args[] ) {
+  public static void main( String args[] ) throws Exception {
+    UIManager.setLookAndFeel( WindowsLookAndFeel.class.getName() );
     IModelFieldGroup groups[] = new IModelFieldGroup[] {
       new ModelFieldGroup( "A", "A" )
         .withChild( new ModelField( "B", "B" ) )
@@ -39,7 +45,8 @@ public class JBroTableUIShowcase {
     data.setRows( rows );
     JBroTable table = new JBroTable( data );
    // table.setAutoCreateRowSorter( true );
-    table.setUI( new JBroTableUI().withSpan( new ModelSpan( "B", "B" ).withColumns( "B", "C", "E" ).withDrawAsHeader( true ) ) );
+    table.setUI( new JBroTableUI().withSpan( new ModelSpan( "B", "B" ).withColumns( "B", "C", "E" ).withDrawAsHeader( true ) )
+                                  .withSpan( new ModelSpan( "G", "G" ).withColumns( "G", "J" ) ) );
     JFrame frame = new JFrame( "Testing" );
     frame.setDefaultCloseOperation( JFrame.EXIT_ON_CLOSE );
     frame.setLayout( new FlowLayout() );

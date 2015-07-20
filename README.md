@@ -9,8 +9,9 @@ Supported Look & Feels:
 - Windows Classic
 - Motif
 - Metal (high contrast, steel, ocean)
+- GTK
 
-Tested on Windows 7 and 8 with standard and with classic theme. Not tested on Mac OS and Linux. _May_ work on Aqua and GTK properly too.
+Tested on Windows 2003, 7 and 8 with standard (Luna, Aero, Metro) and with classic themes. Tested on OpenSUSE 11 with GNOME (GTK+ 2). Not tested on Mac OS. _May_ work on Aqua L&F properly too.
 
 Supported features (original StackOverflow answer):
 - Stops dragging a column at table end

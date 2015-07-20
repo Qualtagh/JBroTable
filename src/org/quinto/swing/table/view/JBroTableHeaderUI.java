@@ -775,70 +775,90 @@ public class JBroTableHeaderUI extends BasicTableHeaderUI {
       boolean headerLeftToRight = header.getComponentOrientation().isLeftToRight();
       JBroTableColumnModel groupModel = getTableColumnModel();
       if ( draggedColumn != null ) {
-        int startIndex = groupModel.getColumnAbsoluteIndex( draggedColumn );
-        int endIndex = startIndex + draggedColumn.getColspan() - 1;
+        boolean calcNewPosition = true;
         int draggedDistance = mouseX - mouseXOffset;
-        int direction = draggedDistance < 0 ? -1 : 1;
-        int newColumnIndex = direction < 0 ? startIndex - 1 : endIndex + 1;
-        boolean shouldMove = true;
-        if ( newColumnIndex < 0 ) {
-          newColumnIndex = 0;
-          shouldMove = false;
-        } else if ( newColumnIndex >= groupModel.getColumnCount() ) {
-          newColumnIndex = groupModel.getColumnCount() - 1;
-          shouldMove = false;
-        }
-        if ( shouldMove ) {
-          IModelFieldGroup modelField = groupModel.getModelField( draggedColumn );
-          if ( modelField != null && !modelField.isManageable() ) {
-            newColumnIndex = direction < 0 ? startIndex : endIndex;
+        boolean moved = false;
+        while ( calcNewPosition ) {
+          int startIndex = groupModel.getColumnAbsoluteIndex( draggedColumn );
+          int endIndex = startIndex + draggedColumn.getColspan() - 1;
+          int direction = draggedDistance < 0 ? -1 : 1;
+          int newColumnIndex = direction < 0 ? startIndex - 1 : endIndex + 1;
+          boolean shouldMove = true;
+          if ( newColumnIndex < 0 ) {
+            newColumnIndex = 0;
+            shouldMove = false;
+          } else if ( newColumnIndex >= groupModel.getColumnCount() ) {
+            newColumnIndex = groupModel.getColumnCount() - 1;
             shouldMove = false;
           }
-        }
-        if ( shouldMove ) {
-          JBroTableColumn parent = groupModel.getColumnParent( draggedColumn );
-          if ( parent != null ) {
-            int parentStartIndex = groupModel.getColumnAbsoluteIndex( parent );
-            int parentEndIndex = parentStartIndex + parent.getColspan() - 1;
-            if ( newColumnIndex < parentStartIndex ) {
-              newColumnIndex = parentStartIndex;
-              shouldMove = false;
-            } else if ( newColumnIndex > parentEndIndex ) {
-              newColumnIndex = parentEndIndex;
+          if ( shouldMove ) {
+            IModelFieldGroup modelField = groupModel.getModelField( draggedColumn );
+            if ( modelField != null && !modelField.isManageable() ) {
+              newColumnIndex = direction < 0 ? startIndex : endIndex;
               shouldMove = false;
             }
           }
-        }
-        JBroTableColumn newGroup = null;
-        if ( shouldMove ) {
-          newGroup = groupModel.getColumnAtAbsolutePosition( newColumnIndex, draggedColumn.getY() );
-          IModelFieldGroup modelField = groupModel.getModelField( newGroup );
-          if ( modelField != null && !modelField.isManageable() ) {
-            newColumnIndex = direction < 0 ? startIndex : endIndex;
-            shouldMove = false;
-          }
-        }
-        if ( shouldMove ) {
-          int width = getGroupSize( newGroup ).width;
-          int groupStartIndex = groupModel.getColumnAbsoluteIndex( newGroup );
-          int groupEndIndex = newGroup.getColspan() + groupStartIndex - 1;
-          if ( direction < 0 )
-            newColumnIndex = groupStartIndex;
-          else
-            newColumnIndex = groupEndIndex;
-          if ( Math.abs( draggedDistance ) > width / 2 ) {
-            if ( newColumnIndex >= 0 && newColumnIndex < groupModel.getColumnCount() ) {
-              mouseXOffset = mouseXOffset + direction * width;
-              draggedDistance = mouseX - mouseXOffset;
-              header.setDraggedDistance( draggedDistance - direction * width );
-              groupModel.moveColumn( draggedColumn, newColumnIndex );
+          if ( shouldMove ) {
+            JBroTableColumn parent = groupModel.getColumnParent( draggedColumn );
+            if ( parent != null ) {
+              int parentStartIndex = groupModel.getColumnAbsoluteIndex( parent );
+              int parentEndIndex = parentStartIndex + parent.getColspan() - 1;
+              if ( newColumnIndex < parentStartIndex ) {
+                newColumnIndex = parentStartIndex;
+                shouldMove = false;
+              } else if ( newColumnIndex > parentEndIndex ) {
+                newColumnIndex = parentEndIndex;
+                shouldMove = false;
+              }
             }
           }
-        } else
-          draggedDistance = 0;
-        header.repaint();
-        table.repaint();
-        setDraggedDistance( draggedDistance, newColumnIndex );
+          JBroTableColumn newGroup = null;
+          if ( shouldMove ) {
+            newGroup = groupModel.getColumnAtAbsolutePosition( newColumnIndex, draggedColumn.getY() );
+            IModelFieldGroup modelField = groupModel.getModelField( newGroup );
+            if ( modelField != null && !modelField.isManageable() )
+              shouldMove = false;
+          }
+          if ( shouldMove ) {
+            int width = getGroupSize( newGroup ).width;
+            int groupStartIndex = groupModel.getColumnAbsoluteIndex( newGroup );
+            int groupEndIndex = newGroup.getColspan() + groupStartIndex - 1;
+            if ( direction < 0 )
+              newColumnIndex = groupStartIndex;
+            else
+              newColumnIndex = groupEndIndex;
+            if ( Math.abs( draggedDistance ) > width / 2 ) {
+              if ( newColumnIndex >= 0 && newColumnIndex < groupModel.getColumnCount() ) {
+                mouseXOffset += direction * width;
+                draggedDistance = mouseX - mouseXOffset;
+                groupModel.moveColumn( draggedColumn, newColumnIndex );
+                moved = true;
+              } else
+                calcNewPosition = false;
+            } else
+              calcNewPosition = false;
+          } else {
+            draggedDistance = 0;
+            calcNewPosition = false;
+          }
+        }
+        header.setDraggedDistance( draggedDistance );
+        if ( !moved ) {
+          Container c = table;
+          while ( c != null ) {
+            if ( SwingUtilities.isDescendingFrom( header, c ) )
+              break;
+            c = c.getParent();
+          }
+          if ( c == null ) {
+            header.repaint();
+            table.repaint();
+          } else {
+            Rectangle r = SwingUtilities.convertRectangle( header, header.getVisibleRect(), c );
+            r = r.union( SwingUtilities.convertRectangle( table, table.getVisibleRect(), c ) );
+            c.repaint( r.x, r.y, r.width, r.height );
+          }
+        }
       } else if ( resizingColumn != null ) {
         // TODO: child column resizing should affect only columns inside a parent group.
         // TODO: parent column resizing should proportionally affect all child columns.
@@ -858,7 +878,7 @@ public class JBroTableHeaderUI extends BasicTableHeaderUI {
       JBroTableHeader header = getHeader();
       if ( !header.isEnabled() )
         return;
-      setDraggedDistance( 0, viewIndexForColumn( header.getDraggedGroup() ) );
+      header.setDraggedDistance( 0 );
       header.setResizingColumn( null );
       header.setDraggedColumn( null );
       updateRolloverColumn( e );
@@ -878,12 +898,6 @@ public class JBroTableHeaderUI extends BasicTableHeaderUI {
       if ( !header.isEnabled() )
         return;
       selectColumn( null );
-    }
-    
-    private void setDraggedDistance( int draggedDistance, int column ) {
-      header.setDraggedDistance( draggedDistance );
-      if ( column != -1 )
-        header.getColumnModel().moveColumn( column, column );
     }
   }
 }

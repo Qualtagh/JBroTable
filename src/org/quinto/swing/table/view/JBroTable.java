@@ -456,6 +456,10 @@ public class JBroTable extends JTable {
     return convertColumnIndexToView( getData().getIndexOfModelField( identifier ) );
   }
 
+  @Override
+  public void columnMoved( TableColumnModelEvent e ) {
+  }
+
   /**
    * Value in a cell located at the given row and a column identified by name.
    * @param row row number

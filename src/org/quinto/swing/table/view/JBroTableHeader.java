@@ -149,6 +149,10 @@ public class JBroTableHeader extends JTableHeader {
   public JBroTable getTable() {
     return ( JBroTable )super.getTable();
   }
+
+  @Override
+  public void columnMoved( TableColumnModelEvent e ) {
+  }
   
   private class DelegateHeader extends JTableHeader {
     private final int level;

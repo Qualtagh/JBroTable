@@ -134,7 +134,6 @@ public class JBroTableColumnModelShowcase {
     }
     data.setRows( rows );
     table = new JBroTable( data );
-    table.setUI( new JBroTableUI() );
    // table.setAutoCreateRowSorter( true );
     System.out.println( table.getColumnModel() );
     for ( TableColumn tc : Collections.list( table.getColumnModel().getColumns() ) )

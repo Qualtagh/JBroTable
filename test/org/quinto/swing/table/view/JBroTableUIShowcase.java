@@ -1,13 +1,10 @@
 package org.quinto.swing.table.view;
 
-import com.sun.java.swing.plaf.windows.WindowsClassicLookAndFeel;
 import com.sun.java.swing.plaf.windows.WindowsLookAndFeel;
 import java.awt.FlowLayout;
-import javax.swing.DefaultListSelectionModel;
 import javax.swing.JFrame;
 import javax.swing.JScrollPane;
 import javax.swing.UIManager;
-import javax.swing.plaf.nimbus.NimbusLookAndFeel;
 import org.quinto.swing.table.model.ModelData;
 import org.quinto.swing.table.model.ModelField;
 import org.quinto.swing.table.model.ModelFieldGroup;

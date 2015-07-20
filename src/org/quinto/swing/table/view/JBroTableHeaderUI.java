@@ -567,7 +567,8 @@ public class JBroTableHeaderUI extends BasicTableHeaderUI {
 
   private boolean canResize( Point p, JBroTableColumn column, JTableHeader header ) {
     Rectangle bounds = getGroupHeaderBoundsFor( column );
-    return bounds != null && column != null && !bounds.contains( p ) && header.getResizingAllowed() && column.getResizable();
+    bounds.grow( -3, 0 );
+    return column != null && !bounds.contains( p ) && header.getResizingAllowed() && column.getResizable();
   }
 
   private void updateRolloverColumn( MouseEvent e ) {
@@ -745,12 +746,6 @@ public class JBroTableHeaderUI extends BasicTableHeaderUI {
       }
     }
 
-    private void swapCursor() {
-      Cursor tmp = header.getCursor();
-      header.setCursor( otherCursor );
-      otherCursor = tmp;
-    }
-
     @Override
     public void mouseMoved( MouseEvent e ) {
       if ( !header.isEnabled() )
@@ -759,8 +754,14 @@ public class JBroTableHeaderUI extends BasicTableHeaderUI {
       JBroTableColumn selectedColumn = getColumnAtPoint( point );
       selectColumn( selectedColumn );
       JBroTableColumn resizingColumn = getResizingColumn( point );
-      if ( canResize( point, resizingColumn, header ) != ( header.getCursor() == resizeCursor ) )
-        swapCursor();
+      Cursor cursor = header.getCursor();
+      if ( canResize( point, resizingColumn, header ) ) {
+        if ( cursor != resizeCursor ) {
+          header.setCursor( resizeCursor );
+          otherCursor = cursor;
+        }
+      } else if ( cursor == resizeCursor )
+        header.setCursor( otherCursor == resizeCursor ? null : otherCursor );
       updateRolloverColumn( e );
     }
 

@@ -40,8 +40,6 @@ public class JBroTable extends JTable {
   
   public JBroTable( ModelData data ) {
     super( new JBroTableModel( data ) );
-    setShowGrid( true );
-    setIntercellSpacing( new Dimension( 1, 1 ) );
     super.setUI( new JBroTableUI() );
     checkFieldWidths();
     refresh();
@@ -49,13 +47,18 @@ public class JBroTable extends JTable {
 
   @Override
   public void setUI( TableUI ui ) {
-    if ( ui instanceof JBroTableUI )
+    JBroTableUI oldUI = getUI();
+    if ( oldUI != null || ui instanceof JBroTableUI ) {
       super.setUI( ui );
-    else {
-      JBroTableUI oldUI = getUI();
-      if ( oldUI != null ) {
-        super.setUI( ui );
-        super.setUI( oldUI );
+      if ( !( ui instanceof JBroTableUI ) ) {
+        if ( ui != null )
+          ui.uninstallUI( this );
+        this.ui = oldUI;
+        oldUI.setNoDefaults( true );
+        oldUI.installUI( this );
+        oldUI.setNoDefaults( false );
+        firePropertyChange( "UI", ui, oldUI );
+        refresh();
       }
     }
   }

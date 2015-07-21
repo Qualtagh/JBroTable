@@ -2,6 +2,7 @@ package org.quinto.swing.table.view;
 
 import java.awt.Color;
 import java.awt.Component;
+import java.awt.Dimension;
 import java.awt.Graphics;
 import java.awt.Point;
 import java.awt.Rectangle;
@@ -25,6 +26,7 @@ public class JBroTableUI extends BasicTableUI {
   private final Map< String, Map< String, ModelSpan > > spans = new HashMap< String, Map< String, ModelSpan > >();
   private boolean spanCoveredCells[][] = new boolean[ 0 ][ 0 ];
   private final JTableHeader innerHeader = new JTableHeader();
+  private boolean noDefaults;
   
   @Override
   public void paint( Graphics g, JComponent c ) {
@@ -412,6 +414,22 @@ public class JBroTableUI extends BasicTableUI {
         throw new IllegalArgumentException( "Span column intersection: column " + column + " is used in both spans " + prev + " and " + span );
     }
     return this;
+  }
+
+  @Override
+  protected void installDefaults() {
+    if ( !noDefaults )
+      super.installDefaults();
+    table.setShowGrid( true );
+    table.setIntercellSpacing( new Dimension( 1, 1 ) );
+  }
+
+  public boolean isNoDefaults() {
+    return noDefaults;
+  }
+
+  public void setNoDefaults(boolean noDefaults) {
+    this.noDefaults = noDefaults;
   }
   
   /**

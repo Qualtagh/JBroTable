@@ -273,4 +273,23 @@ public class ModelField implements Serializable, Comparable< ModelField >, IMode
       ret[ i ] = upperFields[ i ].clone();
     return ModelFieldGroup.getBottomFields( ret );
   }
+
+  /**
+   * Checks if {@code this} is a descendant of {@code ancestorCandidate}.
+   * @param ancestorCandidate a probable ancestor of {@code this}
+   * @param checkAncestorCandidateItself also return {@code true} if {@code this} == {@code ancestorCandidate}
+   * @return true iff ancestorCandidate is an ancestor of {@code this}
+   */
+  public boolean isDescendantOf( IModelFieldGroup ancestorCandidate, boolean checkAncestorCandidateItself ) {
+    if ( ancestorCandidate == null )
+      return false;
+    if ( !checkAncestorCandidateItself )
+      ancestorCandidate = ancestorCandidate.getParent();
+    while ( ancestorCandidate != null )
+      if ( ancestorCandidate == this )
+        return true;
+      else
+        ancestorCandidate = ancestorCandidate.getParent();
+    return false;
+  }
 }

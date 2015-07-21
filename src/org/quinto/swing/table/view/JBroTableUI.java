@@ -19,7 +19,9 @@ import javax.swing.table.JTableHeader;
 import javax.swing.table.TableCellRenderer;
 import javax.swing.table.TableColumn;
 import javax.swing.table.TableColumnModel;
+import org.quinto.swing.table.model.IModelFieldGroup;
 import org.quinto.swing.table.model.ModelData;
+import org.quinto.swing.table.model.ModelField;
 import org.quinto.swing.table.model.ModelSpan;
 
 public class JBroTableUI extends BasicTableUI {
@@ -194,13 +196,14 @@ public class JBroTableUI extends BasicTableUI {
   }
 
   private void paintCells( Graphics g, int rMin, int rMax, int cMin, int cMax ) {
-    JTableHeader header = table.getTableHeader();
-    TableColumn draggedColumn = header == null ? null : header.getDraggedColumn();
-    TableColumnModel cm = table.getColumnModel();
+    JBroTableHeader header = ( JBroTableHeader )table.getTableHeader();
+    JBroTableColumn draggedColumn = header == null ? null : header.getDraggedGroup();
+    JBroTableColumnModel cm = ( JBroTableColumnModel )table.getColumnModel();
+    IModelFieldGroup draggedField = cm.getModelField( draggedColumn );
     int columnMargin = cm.getColumnMargin();
     Rectangle cellRect;
     Rectangle spannedCellRect = new Rectangle();
-    TableColumn aColumn;
+    JBroTableColumn aColumn;
     int columnWidth;
     int rowCount = table.getRowCount();
     int columnCount = table.getColumnCount();
@@ -216,9 +219,10 @@ public class JBroTableUI extends BasicTableUI {
       cellRect = table.getCellRect( row, cMin, false );
       for ( int column = cMin; column <= cMax; column++ ) {
         aColumn = cm.getColumn( column );
+        ModelField field = ( ModelField )cm.getModelField( aColumn );
         columnWidth = aColumn.getWidth();
         cellRect.width = columnWidth - columnMargin;
-        if ( aColumn != draggedColumn ) {
+        if ( !field.isDescendantOf( draggedField, true ) ) {
           if ( table.isEditing() && table.getEditingRow() == row && table.getEditingColumn() == column )
             paintEditingCell( g, cellRect );
           else if ( !spanCoveredCells[ row ][ column ] ) {
@@ -311,38 +315,44 @@ public class JBroTableUI extends BasicTableUI {
     return -1;
   }
 
-  private void paintDraggedArea( Graphics g, int rMin, int rMax, TableColumn draggedColumn, int distance ) {
-    int draggedColumnIndex = viewIndexForColumn( draggedColumn );
-    Rectangle minCell = table.getCellRect( rMin, draggedColumnIndex, true );
-    Rectangle maxCell = table.getCellRect( rMax, draggedColumnIndex, true );
+  private void paintDraggedArea( Graphics g, int rMin, int rMax, JBroTableColumn draggedColumn, int distance ) {
+    JBroTableColumnModel cm = ( JBroTableColumnModel )table.getColumnModel();
+    int startIndex = cm.getColumnAbsoluteIndex( draggedColumn );
+    int endIndex = startIndex + draggedColumn.getColspan() - 1;
+    Rectangle minCell = table.getCellRect( rMin, startIndex, true );
+    Rectangle maxCell = table.getCellRect( rMax, endIndex, true );
     Rectangle vacatedColumnRect = minCell.union( maxCell );
     g.setColor( table.getParent().getBackground() );
-    g.fillRect( vacatedColumnRect.x, vacatedColumnRect.y, vacatedColumnRect.width - ( vacatedColumnRect.width > 0 && table.getShowVerticalLines() ? 1 : 0 ), vacatedColumnRect.height );
+    g.fillRect( vacatedColumnRect.x, vacatedColumnRect.y, vacatedColumnRect.width - ( vacatedColumnRect.width > 0 && table.getShowVerticalLines() && endIndex < cm.getColumnCount() - 1 ? 1 : 0 ), vacatedColumnRect.height );
     vacatedColumnRect.x += distance;
     g.setColor( table.getBackground() );
     g.fillRect( vacatedColumnRect.x, vacatedColumnRect.y, vacatedColumnRect.width, vacatedColumnRect.height );
     if ( table.getShowVerticalLines() ) {
       g.setColor( table.getGridColor() );
-      int x1 = vacatedColumnRect.x;
+      int x1 = vacatedColumnRect.x - 1;
       int y1 = vacatedColumnRect.y;
-      int x2 = x1 + vacatedColumnRect.width - 1;
       int y2 = y1 + vacatedColumnRect.height - 1;
-      g.drawLine( x1 - 1, y1, x1 - 1, y2 );
-      g.drawLine( x2, y1, x2, y2 );
+      g.drawLine( x1, y1, x1, y2 );
+      for ( int draggedColumnIndex = startIndex; draggedColumnIndex <= endIndex; draggedColumnIndex++ ) {
+        x1 += cm.getColumn( draggedColumnIndex ).getWidth();
+        g.drawLine( x1, y1, x1, y2 );
+      }
     }
     for ( int row = rMin; row <= rMax; row++ ) {
-      Rectangle r = table.getCellRect( row, draggedColumnIndex, false );
-      r.x += distance;
-      paintDraggedCell( g, r, row, draggedColumnIndex );
-      if ( table.getShowHorizontalLines() ) {
-        g.setColor( table.getGridColor() );
-        Rectangle rcr = table.getCellRect( row, draggedColumnIndex, true );
-        rcr.x += distance;
-        int x1 = rcr.x;
-        int y1 = rcr.y;
-        int x2 = x1 + rcr.width - 1;
-        int y2 = y1 + rcr.height - 1;
-        g.drawLine( x1, y2, x2, y2 );
+      for ( int draggedColumnIndex = startIndex; draggedColumnIndex <= endIndex; draggedColumnIndex++ ) {
+        Rectangle r = table.getCellRect( row, draggedColumnIndex, false );
+        r.x += distance;
+        paintDraggedCell( g, r, row, draggedColumnIndex );
+        if ( table.getShowHorizontalLines() ) {
+          g.setColor( table.getGridColor() );
+          Rectangle rcr = table.getCellRect( row, draggedColumnIndex, true );
+          rcr.x += distance;
+          int x1 = rcr.x;
+          int y1 = rcr.y;
+          int x2 = x1 + rcr.width - 1;
+          int y2 = y1 + rcr.height - 1;
+          g.drawLine( x1, y2, x2, y2 );
+        }
       }
     }
   }

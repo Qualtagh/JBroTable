@@ -34,7 +34,6 @@ import javax.swing.plaf.ComponentUI;
 import javax.swing.plaf.basic.BasicTableHeaderUI;
 import javax.swing.plaf.metal.MetalLookAndFeel;
 import javax.swing.plaf.metal.MetalTheme;
-import javax.swing.plaf.nimbus.NimbusStyle;
 import javax.swing.table.JTableHeader;
 import javax.swing.table.TableCellRenderer;
 import javax.swing.table.TableColumn;
@@ -163,7 +162,7 @@ public class JBroTableHeaderUI extends BasicTableHeaderUI {
       Method method = parameters == null ? clazz.getDeclaredMethod( methodName ) : clazz.getDeclaredMethod( methodName, parameters );
       boolean accessible = method.isAccessible();
       if ( !accessible )
-        method.setAccessible( true );NimbusStyle f;
+        method.setAccessible( true );
       return args == null ? method.invoke( ui ) : method.invoke( ui, args );
     } catch ( IllegalAccessException e ) {
       LOGGER.error( null, e );
@@ -844,22 +843,8 @@ public class JBroTableHeaderUI extends BasicTableHeaderUI {
           }
         }
         header.setDraggedDistance( draggedDistance );
-        if ( !moved ) {
-          Container c = table;
-          while ( c != null ) {
-            if ( SwingUtilities.isDescendingFrom( header, c ) )
-              break;
-            c = c.getParent();
-          }
-          if ( c == null ) {
-            header.repaint();
-            table.repaint();
-          } else {
-            Rectangle r = SwingUtilities.convertRectangle( header, header.getVisibleRect(), c );
-            r = r.union( SwingUtilities.convertRectangle( table, table.getVisibleRect(), c ) );
-            c.repaint( r.x, r.y, r.width, r.height );
-          }
-        }
+        if ( !moved )
+          repaintHeaderAndTable();
       } else if ( resizingColumn != null ) {
         // TODO: child column resizing should affect only columns inside a parent group.
         // TODO: parent column resizing should proportionally affect all child columns.
@@ -873,6 +858,23 @@ public class JBroTableHeaderUI extends BasicTableHeaderUI {
       }
       updateRolloverColumn( e );
     }
+    
+    private void repaintHeaderAndTable() {
+      Container c = table;
+      while ( c != null ) {
+        if ( SwingUtilities.isDescendingFrom( header, c ) )
+          break;
+        c = c.getParent();
+      }
+      if ( c == null ) {
+        header.repaint();
+        table.repaint();
+      } else {
+        Rectangle r = SwingUtilities.convertRectangle( header, header.getVisibleRect(), c );
+        r = r.union( SwingUtilities.convertRectangle( table, table.getVisibleRect(), c ) );
+        c.repaint( r.x, r.y, r.width, r.height );
+      }
+    }
 
     @Override
     public void mouseReleased( MouseEvent e ) {
@@ -883,8 +885,7 @@ public class JBroTableHeaderUI extends BasicTableHeaderUI {
       header.setResizingColumn( null );
       header.setDraggedColumn( null );
       updateRolloverColumn( e );
-      header.repaint();
-      table.repaint();
+      repaintHeaderAndTable();
     }
 
     @Override

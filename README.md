@@ -20,10 +20,11 @@ Supported features (original StackOverflow answer):
 New features:
 - Arbitrary number of rows in a header
 - Stops dragging at freezed column (such columns may be set in a table model via API)
-- Generic support for L&Fs (they're not reimplemented)
+- Generic support for L&Fs (it means they're not reimplemented, they're used as delegates for rendering)
 - Easy to use table model API
 - Table header cells highlighting on mouse over
 - Table cells spans API to merge cells inside a table itself (not in a header)
+- Drawing of dragged columns group in a table itself (not only in a header)
 - Partial test coverage
 - Setting custom rowspan. Rowspan is calculated automatically in a greedy way, but sometimes such a picture is needed (and it can't be calculated automatically):
 
@@ -46,7 +47,7 @@ Dependencies:
 - Apache Log4J
 - JUnit (for tests only)
 
-[__Animated demo__](/github/demo.gif) (1.6M)
+[__Animated demo__](/github/demo.gif) (2.5M)
 
 Sample usage:
 

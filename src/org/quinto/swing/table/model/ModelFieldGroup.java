@@ -36,9 +36,6 @@ public class ModelFieldGroup implements IModelFieldGroup, Serializable {
     childrenRowspan = -1;
   }
   
-  /**
-   * @see Serializable
-   */
   private void readObject( ObjectInputStream ois ) throws IOException, ClassNotFoundException {
     ois.defaultReadObject();
     childrenRowspan = -1;

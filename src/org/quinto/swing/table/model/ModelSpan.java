@@ -35,7 +35,7 @@ public class ModelSpan {
   /**
    * The way how a merged cell should be rendered.
    * @param drawAsHeader true - a merged cell would be rendered as a header cell, false - as a regular table cell
-   * @return 
+   * @return this
    */
   public ModelSpan withDrawAsHeader( boolean drawAsHeader ) {
     setDrawAsHeader( drawAsHeader );

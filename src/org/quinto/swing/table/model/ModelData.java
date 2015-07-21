@@ -40,9 +40,6 @@ public class ModelData implements Serializable {
     this( ModelFieldGroup.getBottomFields( fieldGroups ) );
   }
   
-  /**
-   * @see Serializable
-   */
   private void readObject( ObjectInputStream ois ) throws IOException, ClassNotFoundException {
     ois.defaultReadObject();
     indexateFields();

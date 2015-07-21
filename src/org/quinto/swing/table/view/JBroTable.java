@@ -340,10 +340,10 @@ public class JBroTable extends JTable {
 
   /**
    * A list of pairs ( Identifier, column width in pixels ).
-   * <p>A separator inside a pair is ":".<br/>
-   * Pairs separator is ";".<br/>
-   * No extra ";" at the end.<br/>
-   * Columns have the view order. Only visible columns are printed.<br/>
+   * <p>A separator inside a pair is ":".<br>
+   * Pairs separator is ";".<br>
+   * No extra ";" at the end.<br>
+   * Columns have the view order. Only visible columns are printed.<br>
    * The model order fields can be obtained using method {@link #getColumnsWidths()}.</p>
    * @return a list of fields and their widths
    */
@@ -379,8 +379,8 @@ public class JBroTable extends JTable {
 
   /**
    * A list of pairs ( Identifier, field width in pixels ).
-   * <p>The output format is described at method {@link #getFieldsOrderAndWidths()}.<br/>
-   * Fields are printed in the model order. Only visible fields are included.<br/>
+   * <p>The output format is described at method {@link #getFieldsOrderAndWidths()}.<br>
+   * Fields are printed in the model order. Only visible fields are included.<br>
    * The view order list can be obtained by method {@link #getFieldsOrderAndWidths()}.</p>
    * @return a list of fields and their widths
    */

@@ -305,16 +305,6 @@ public class JBroTableUI extends BasicTableUI {
     rendererPane.removeAll();
   }
 
-  private int viewIndexForColumn( TableColumn aColumn ) {
-    TableColumnModel cm = table.getColumnModel();
-    for ( int column = 0; column < cm.getColumnCount(); column++ ) {
-      if ( cm.getColumn( column ) == aColumn ) {
-        return column;
-      }
-    }
-    return -1;
-  }
-
   private void paintDraggedArea( Graphics g, int rMin, int rMax, JBroTableColumn draggedColumn, int distance ) {
     JBroTableColumnModel cm = ( JBroTableColumnModel )table.getColumnModel();
     int startIndex = cm.getColumnAbsoluteIndex( draggedColumn );
@@ -428,17 +418,14 @@ public class JBroTableUI extends BasicTableUI {
 
   @Override
   protected void installDefaults() {
+    innerHeader.updateUI();
     if ( !noDefaults )
       super.installDefaults();
     table.setShowGrid( true );
     table.setIntercellSpacing( new Dimension( 1, 1 ) );
   }
 
-  public boolean isNoDefaults() {
-    return noDefaults;
-  }
-
-  public void setNoDefaults(boolean noDefaults) {
+  void setNoDefaults( boolean noDefaults ) {
     this.noDefaults = noDefaults;
   }
   

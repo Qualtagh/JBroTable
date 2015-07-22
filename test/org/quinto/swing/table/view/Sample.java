@@ -9,9 +9,11 @@ import org.quinto.swing.table.model.ModelData;
 import org.quinto.swing.table.model.ModelField;
 import org.quinto.swing.table.model.ModelFieldGroup;
 import org.quinto.swing.table.model.ModelRow;
+import org.quinto.swing.table.model.Utils;
 
 public class Sample {
   public static void main( String args[] ) throws Exception {
+    Utils.initSimpleConsoleLogger();
     UIManager.setLookAndFeel( UIManager.getSystemLookAndFeelClassName() );
     
     // Hierarchically create columns and column groups.

@@ -3,8 +3,6 @@ package org.quinto.swing.table.view;
 import com.sun.java.swing.plaf.motif.MotifLookAndFeel;
 import com.sun.java.swing.plaf.windows.WindowsClassicLookAndFeel;
 import com.sun.java.swing.plaf.windows.WindowsLookAndFeel;
-import java.awt.Color;
-import java.awt.Dimension;
 import java.awt.FlowLayout;
 import java.awt.Toolkit;
 import java.awt.event.ActionEvent;
@@ -12,13 +10,11 @@ import java.awt.event.ActionListener;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.Collections;
-import java.util.logging.Level;
 import javax.swing.JButton;
 import javax.swing.JFrame;
 import javax.swing.JScrollPane;
 import javax.swing.JTable;
 import javax.swing.SwingUtilities;
-import javax.swing.UIDefaults;
 import javax.swing.UIManager;
 import javax.swing.UnsupportedLookAndFeelException;
 import javax.swing.plaf.metal.DefaultMetalTheme;
@@ -26,7 +22,6 @@ import javax.swing.plaf.metal.MetalLookAndFeel;
 import javax.swing.plaf.metal.MetalTheme;
 import javax.swing.plaf.metal.OceanTheme;
 import javax.swing.plaf.nimbus.NimbusLookAndFeel;
-import javax.swing.plaf.synth.SynthLookAndFeel;
 import javax.swing.table.TableColumn;
 import org.apache.log4j.Logger;
 import org.quinto.swing.table.model.ModelData;
@@ -104,7 +99,7 @@ public class JBroTableColumnModelShowcase {
         }
         laf++;
         if ( frame != null ) {
-          SwingUtilities.updateComponentTreeUI( frame );
+          Utils.updateComponentTreeUI();
           frame.pack();
         }
       }

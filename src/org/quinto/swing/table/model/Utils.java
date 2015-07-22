@@ -1,9 +1,11 @@
 package org.quinto.swing.table.model;
 
 import java.awt.FontMetrics;
+import java.awt.Window;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.util.Properties;
+import javax.swing.SwingUtilities;
 import javax.swing.UIManager;
 import javax.swing.UnsupportedLookAndFeelException;
 import org.apache.log4j.Logger;
@@ -95,5 +97,16 @@ public class Utils {
         result.append( '\n' );
     }
     return result.toString();
+  }
+
+  public static void updateComponentTreeUI() {
+    for ( Window window : Window.getWindows() )
+      updateComponentTreeUI( window );
+  }
+
+  private static void updateComponentTreeUI( Window window ) {
+    SwingUtilities.updateComponentTreeUI( window );
+    for ( Window w : window.getOwnedWindows() )
+      updateComponentTreeUI( w );
   }
 }

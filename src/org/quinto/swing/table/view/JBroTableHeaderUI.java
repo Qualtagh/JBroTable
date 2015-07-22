@@ -10,8 +10,6 @@ import java.awt.Rectangle;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseListener;
 import java.awt.event.MouseMotionListener;
-import java.beans.PropertyChangeEvent;
-import java.beans.PropertyChangeListener;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
@@ -25,15 +23,12 @@ import javax.swing.JComponent;
 import javax.swing.JScrollPane;
 import javax.swing.JTable;
 import javax.swing.JViewport;
-import javax.swing.LookAndFeel;
 import javax.swing.RowSorter;
 import javax.swing.SwingUtilities;
 import javax.swing.UIManager;
 import javax.swing.event.MouseInputListener;
 import javax.swing.plaf.ComponentUI;
 import javax.swing.plaf.basic.BasicTableHeaderUI;
-import javax.swing.plaf.metal.MetalLookAndFeel;
-import javax.swing.plaf.metal.MetalTheme;
 import javax.swing.table.JTableHeader;
 import javax.swing.table.TableCellRenderer;
 import javax.swing.table.TableColumn;
@@ -46,44 +41,28 @@ public class JBroTableHeaderUI extends BasicTableHeaderUI {
   private static final Map< String, Boolean > EXISTING_PARENT_UIS = new HashMap< String, Boolean >();
   
   private JBroTableColumn selectedColumn;
-  private LookAndFeel lookAndFeel;
-  private MetalTheme metalTheme;
-  private final PropertyChangeListener listener;
   private final JBroTable table;
   private List< ComponentUI > delegates;
   private List< CellRendererPane > rendererPanes;
   private List< JTableHeader > headers;
   private List< Integer > rowHeights;
+  private boolean updating;
+  private ComponentUI headerDelegate;
   
   public JBroTableHeaderUI( JBroTable table ) {
     this.table = table;
     updateLookAndFeel();
-    UIManager.addPropertyChangeListener( listener = new PropertyChangeListener() {
-      @Override
-      public void propertyChange( PropertyChangeEvent evt ) {
-        updateLookAndFeel();
-      }
-    } );
-  }
-
-  @Override
-  protected void finalize() throws Throwable {
-    UIManager.removePropertyChangeListener( listener );
-    super.finalize();
   }
   
-  private void updateLookAndFeel() {
-    LookAndFeel newLookAndFeel = UIManager.getLookAndFeel();
-    if ( lookAndFeel == null || !newLookAndFeel.getName().equals( lookAndFeel.getName() ) || newLookAndFeel instanceof MetalLookAndFeel &&
-       ( metalTheme == null || !MetalLookAndFeel.getCurrentTheme().getName().equals( metalTheme.getName() ) ) ) {
-      if ( header != null )
-        uninstallUI( header );
-      lookAndFeel = newLookAndFeel;
-      if ( lookAndFeel instanceof MetalLookAndFeel )
-        metalTheme = MetalLookAndFeel.getCurrentTheme();
-      if ( header != null )
-        installUI( header );
+  void updateLookAndFeel() {
+    if ( updating )
+      return;
+    updating = true;
+    if ( header != null ) {
+      uninstallUI( header );
+      installUI( header );
     }
+    updating = false;
   }
   
   public JBroTableHeader getHeader() {
@@ -207,8 +186,9 @@ public class JBroTableHeaderUI extends BasicTableHeaderUI {
 
   @Override
   public void uninstallUI( JComponent c ) {
-    for ( ComponentUI delegate : delegates )
-      call( "uninstallUI", new Class[]{ JComponent.class }, delegate, new Object[]{ c } );
+    for ( int i = 0; i < delegates.size(); i++ )
+      call( "uninstallUI", new Class[]{ JComponent.class }, delegates.get( i ), new Object[]{ headers.get( i ) } );
+    call( "uninstallUI", new Class[]{ JComponent.class }, headerDelegate, new Object[]{ header } );
     super.uninstallDefaults();
     super.uninstallListeners();
     super.uninstallKeyboardActions();
@@ -252,12 +232,12 @@ public class JBroTableHeaderUI extends BasicTableHeaderUI {
       return;
     JBroTableHeader header = getHeader();
     try {
-      Class uiClass = lookAndFeel.getDefaults().getUIClass( "TableHeaderUI" );
+      Class uiClass = UIManager.getLookAndFeelDefaults().getUIClass( "TableHeaderUI" );
       Method createUImethod = uiClass.getMethod( "createUI", JComponent.class );
-      ComponentUI delegate = ( ComponentUI )createUImethod.invoke( null, header );
-      call( "installUI", new Class[]{ JComponent.class }, delegate, new Object[]{ header } );
+      headerDelegate = ( ComponentUI )createUImethod.invoke( null, header );
+      call( "installUI", new Class[]{ JComponent.class }, headerDelegate, new Object[]{ header } );
       for ( int level = delegates.size(); level < levelsCnt; level++ ) {
-        delegate = ( ComponentUI )createUImethod.invoke( null, header );
+        ComponentUI delegate = ( ComponentUI )createUImethod.invoke( null, header );
         delegates.add( delegate );
         JTableHeader levelHeader = header.createDelegateForLevel( level );
         call( "installUI", new Class[]{ JComponent.class }, delegate, new Object[]{ levelHeader } );

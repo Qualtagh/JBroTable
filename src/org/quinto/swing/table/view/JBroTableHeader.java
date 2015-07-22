@@ -107,6 +107,14 @@ public class JBroTableHeader extends JTableHeader {
     return ( JBroTableHeaderUI )super.getUI();
   }
 
+  @Override
+  public void updateUI() {
+    JBroTableHeaderUI ui = getUI();
+    if ( ui != null )
+      ui.updateLookAndFeel();
+    super.updateUI();
+  }
+
   public void setRowHeight( int level, Integer height ) {
     getUI().setRowHeight( level, height );
   }
@@ -1300,7 +1308,7 @@ public class JBroTableHeader extends JTableHeader {
 
     @Override
     public String toString() {
-      return JBroTableHeader.this.toString();
+      return super.toString();
     }
 
     @Override

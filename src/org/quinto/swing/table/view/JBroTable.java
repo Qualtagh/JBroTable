@@ -33,6 +33,7 @@ public class JBroTable extends JTable {
   private static final Pattern TAG_PATTERN = Pattern.compile( "<[^<>]++>" );
   private Integer headerHeight;
   private HeaderHeightWatcher headerHeightWatcher;
+  private Integer currentLevel;
 
   public JBroTable() {
     this( null );
@@ -522,6 +523,20 @@ public class JBroTable extends JTable {
       }
     }
     super.columnSelectionChanged( e );
+  }
+
+  void setCurrentLevel( Integer currentLevel ) {
+    this.currentLevel = currentLevel;
+  }
+
+  @Override
+  public TableColumnModel getColumnModel() {
+    return currentLevel == null ? super.getColumnModel() : getTableHeader().getColumnModel( currentLevel );
+  }
+
+  @Override
+  public JBroTableHeader getTableHeader() {
+    return ( JBroTableHeader )super.getTableHeader();
   }
   
   private class HeaderHeightWatcher implements TableColumnModelListener {

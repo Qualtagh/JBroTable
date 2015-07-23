@@ -63,11 +63,11 @@ public class JBroTableColumnModelTest {
     for ( int i = 0; i < rows.length; i++ ) {
       rows[ i ] = new ModelRow( fields.length );
       for ( int j = 0; j < fields.length; j++ )
-        rows[ i ].setValue( j, fields[ j ].getCaption() + i );
+        rows[ i ].setValue( j, i == j ? "sort me" : fields[ j ].getCaption() + i );
     }
     data.setRows( rows );
     table = new JBroTable( data );
-   // table.setAutoCreateRowSorter( true );
+    table.setAutoCreateRowSorter( true );
   }
   
   @After

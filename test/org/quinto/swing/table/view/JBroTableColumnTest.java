@@ -60,7 +60,7 @@ public class JBroTableColumnTest {
     };
     data.setRows( rows );
     table = new JBroTable( data );
-   // table.setAutoCreateRowSorter( true );
+    table.setAutoCreateRowSorter( true );
     pane = new JScrollPane( table );
     frame = new JFrame();
     frame.add( pane );

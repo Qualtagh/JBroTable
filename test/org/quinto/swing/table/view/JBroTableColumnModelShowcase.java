@@ -14,7 +14,6 @@ import javax.swing.JButton;
 import javax.swing.JFrame;
 import javax.swing.JScrollPane;
 import javax.swing.JTable;
-import javax.swing.SwingUtilities;
 import javax.swing.UIManager;
 import javax.swing.UnsupportedLookAndFeelException;
 import javax.swing.plaf.metal.DefaultMetalTheme;
@@ -125,11 +124,11 @@ public class JBroTableColumnModelShowcase {
     for ( int i = 0; i < rows.length; i++ ) {
       rows[ i ] = new ModelRow( fields.length );
       for ( int j = 0; j < fields.length; j++ )
-        rows[ i ].setValue( j, String.valueOf( ( char )( 'A' + j ) ) + i );
+        rows[ i ].setValue( j, i == j ? "sort me" : String.valueOf( ( char )( 'A' + j ) ) + i );
     }
     data.setRows( rows );
     table = new JBroTable( data );
-   // table.setAutoCreateRowSorter( true );
+    table.setAutoCreateRowSorter( true );
     System.out.println( table.getColumnModel() );
     for ( TableColumn tc : Collections.list( table.getColumnModel().getColumns() ) )
       System.out.println( tc.getHeaderValue() );

@@ -379,7 +379,9 @@ public class JBroTableHeaderUI extends BasicTableHeaderUI {
     TableCellRenderer renderer = getRenderer( group );
     boolean parentUIdeterminesRolloverColumnItself = hasParentUI( renderer );
     boolean rollover = parentUIdeterminesRolloverColumnItself ? group == getHeader().getDraggedGroup() : group == selectedColumn;
-    Component component = renderer.getTableCellRendererComponent( header.getTable(), group.getHeaderValue(), rollover, rollover, group.getY(), getTableColumnModel().getColumnRelativeIndex( group ) );
+    table.setCurrentLevel( group.getY() );
+    Component component = renderer.getTableCellRendererComponent( table, group.getHeaderValue(), rollover, rollover, group.getY(), getTableColumnModel().getColumnRelativeIndex( group ) );
+    table.setCurrentLevel( null );
     paintCell( g, component, cellRect );
   }
 

@@ -37,11 +37,11 @@ public class JBroTableUIShowcase {
     for ( int i = 0; i < rows.length; i++ ) {
       rows[ i ] = new ModelRow( fields.length );
       for ( int j = 0; j < fields.length; j++ )
-        rows[ i ].setValue( j, fields[ j ].getCaption() + i );
+        rows[ i ].setValue( j, j == 1 || j == 2 ? rows[ i ].getValue( 0 ) : i == j ? "sort me" : fields[ j ].getCaption() + i );
     }
     data.setRows( rows );
     JBroTable table = new JBroTable( data );
-   // table.setAutoCreateRowSorter( true );
+    table.setAutoCreateRowSorter( true );
     table.setUI( new JBroTableUI().withSpan( new ModelSpan( "B", "B" ).withColumns( "B", "C", "E" ).withDrawAsHeader( true ) )
                                   .withSpan( new ModelSpan( "G", "G" ).withColumns( "G", "J" ) ) );
     JFrame frame = new JFrame( "Testing" );

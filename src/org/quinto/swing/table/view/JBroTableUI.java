@@ -3,9 +3,11 @@ package org.quinto.swing.table.view;
 import java.awt.Color;
 import java.awt.Component;
 import java.awt.Dimension;
+import java.awt.FontMetrics;
 import java.awt.Graphics;
 import java.awt.Point;
 import java.awt.Rectangle;
+import java.awt.Toolkit;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
@@ -13,6 +15,7 @@ import java.util.Map;
 import java.util.Set;
 import javax.swing.JComponent;
 import javax.swing.JTable;
+import javax.swing.LookAndFeel;
 import javax.swing.UIManager;
 import javax.swing.plaf.basic.BasicTableUI;
 import javax.swing.table.JTableHeader;
@@ -423,6 +426,8 @@ public class JBroTableUI extends BasicTableUI {
       super.installDefaults();
     table.setShowGrid( true );
     table.setIntercellSpacing( new Dimension( 1, 1 ) );
+    FontMetrics fm = Toolkit.getDefaultToolkit().getFontMetrics( table.getFont() );
+    LookAndFeel.installProperty( table, "rowHeight", fm.getHeight() + fm.getMaxDescent() );
   }
 
   void setNoDefaults( boolean noDefaults ) {

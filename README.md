@@ -121,4 +121,8 @@ Result (Windows 8 theme):
 
 ![Result](/github/windows8.png)
 
+[More screenshots](https://github.com/Qualtagh/JBroTable/wiki/Screenshots) with different L&Fs are available at wiki.
+
+[Download](https://github.com/Qualtagh/JBroTable/releases/latest) the latest version (ready to use jar file).
+
 Released into public domain.

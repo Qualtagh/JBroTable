@@ -26,6 +26,7 @@ import org.quinto.swing.table.model.IModelFieldGroup;
 import org.quinto.swing.table.model.ModelData;
 import org.quinto.swing.table.model.ModelField;
 import org.quinto.swing.table.model.ModelSpan;
+import org.quinto.swing.table.model.Utils;
 
 public class JBroTableUI extends BasicTableUI {
   private final Map< String, Map< String, ModelSpan > > spans = new HashMap< String, Map< String, ModelSpan > >();
@@ -426,6 +427,8 @@ public class JBroTableUI extends BasicTableUI {
       super.installDefaults();
     table.setShowGrid( true );
     table.setIntercellSpacing( new Dimension( 1, 1 ) );
+    if ( Utils.equals( table.getGridColor(), table.getBackground() ) )
+      table.setGridColor( Color.GRAY.equals( table.getBackground() ) ? Color.LIGHT_GRAY : Color.GRAY );
     FontMetrics fm = Toolkit.getDefaultToolkit().getFontMetrics( table.getFont() );
     LookAndFeel.installProperty( table, "rowHeight", fm.getHeight() + fm.getMaxDescent() );
   }

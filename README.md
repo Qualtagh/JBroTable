@@ -10,8 +10,9 @@ Supported Look & Feels:
 - Motif
 - Metal (high contrast, steel, ocean)
 - GTK
+- Aqua
 
-Tested on Windows 2003, 7 and 8 with standard (Luna, Aero, Metro) and with classic themes. Tested on OpenSUSE 11 with GNOME (GTK+ 2). Not tested on Mac OS. _May_ work on Aqua L&F properly too.
+Tested on Windows 2003, 7 and 8 with standard (Luna, Aero, Metro) and with classic themes. Tested on OpenSUSE 11 with GNOME (GTK+ 2). Tested on Mac OS X 10.8.
 
 Supported features (original StackOverflow answer):
 - Stops dragging a column at table end

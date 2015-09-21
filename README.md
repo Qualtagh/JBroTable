@@ -12,7 +12,7 @@ Supported Look & Feels:
 - GTK
 - Aqua
 
-Tested on Windows 2003, 7 and 8 with standard (Luna, Aero, Metro) and with classic themes. Tested on OpenSUSE 11 with GNOME (GTK+ 2). Tested on Mac OS X 10.8.
+Tested on Windows 2003, Vista, 7 and 8 with standard (Luna, Aero, Metro) and with classic themes. Tested on OpenSUSE 11 with GNOME (GTK+ 2). Tested on Mac OS X 10.8.
 
 Supported features (original StackOverflow answer):
 - Stops dragging a column at table end

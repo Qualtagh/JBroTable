@@ -72,7 +72,9 @@ public class JBroTable extends JTable {
   /**
    * Set the whole header height.
    * @param headerHeight the whole header height, {@code null} means to let Swing determine it
+   * @deprecated use {@link JBroTableHeader#setRowHeight( int, java.lang.Integer )} instead
    */
+  @Deprecated
   public void setHeaderHeight( Integer headerHeight ) {
     if ( headerHeight == null ) {
       if ( headerHeightWatcher != null ) {
@@ -85,6 +87,12 @@ public class JBroTable extends JTable {
     updateHeaderSize();
   }
 
+  /**
+   * Get the whole header height.
+   * @return the whole header height. Zero value may mean that the height is determined by Swing
+   * @deprecated use {@link JBroTableHeader#getRowHeight( int )} instead
+   */
+  @Deprecated
   public int getHeaderHeight() {
     return headerHeight == null ? 0 : headerHeight;
   }

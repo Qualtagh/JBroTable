@@ -212,7 +212,7 @@ public class JBroTableColumnModel extends DefaultTableColumnModel {
   }
   
   public JBroTableColumn getColumnAtAbsolutePosition( int xWithColspans, int level ) {
-    if ( xWithColspans < 0 )
+    if ( xWithColspans < 0 || level < 0 )
       return null;
     int ret = 0;
     for ( JBroTableColumn column : columns.get( level ) ) {
@@ -224,7 +224,7 @@ public class JBroTableColumnModel extends DefaultTableColumnModel {
   }
   
   public int getRelativePosition( int xWithColspans, int level ) {
-    if ( xWithColspans < 0 )
+    if ( xWithColspans < 0 || level < 0 )
       return -1;
     int ret = 0;
     List< JBroTableColumn > levelColumns = columns.get( level );
@@ -238,7 +238,7 @@ public class JBroTableColumnModel extends DefaultTableColumnModel {
   }
   
   public int getAbsolutePosition( int x, int level ) {
-    if ( x < 0 )
+    if ( x < 0 || level < 0 )
       return -1;
     int ret = 0;
     for ( JBroTableColumn column : columns.get( level ) ) {
@@ -251,7 +251,7 @@ public class JBroTableColumnModel extends DefaultTableColumnModel {
   }
   
   public JBroTableColumn getColumnAtRelativePosition( int x, int level ) {
-    return columns.get( level ).get( x );
+    return x < 0 || level < 0 ? null : columns.get( level ).get( x );
   }
 
   public void moveColumn( JBroTableColumn column, int newIndex ) {

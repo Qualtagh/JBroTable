@@ -353,8 +353,9 @@ public class JBroTableUI extends BasicTableUI {
 
   private void paintDraggedCell( Graphics g, Rectangle cellRect, int row, int column ) {
     TableCellRenderer renderer = table.getCellRenderer( row, column );
-    Component component = table.prepareRenderer( renderer, row, column );
-    rendererPane.paintComponent( g, component, table, cellRect.x, cellRect.y, cellRect.width, cellRect.height, true );
+    Component comp = table.prepareRenderer( renderer, row, column );
+    JBroTableHeaderUI.htmlHack( g, comp, cellRect );
+    rendererPane.paintComponent( g, comp, table, cellRect.x, cellRect.y, cellRect.width, cellRect.height, true );
   }
 
   private void paintEditingCell( Graphics g, Rectangle cellRect ) {
@@ -394,14 +395,15 @@ public class JBroTableUI extends BasicTableUI {
       if ( !hasFocus )
         hasFocus = isSelected;
     }
-    Component component = renderer.getTableCellRendererComponent( table, value, isSelected, hasFocus, row, column );
+    Component comp = renderer.getTableCellRendererComponent( table, value, isSelected, hasFocus, row, column );
     g.setColor( header != null ? header.getBackground() : isSelected ? table.getSelectionBackground() : table.getBackground() );
     g.fillRect( cellRect.x, cellRect.y, cellRect.width, cellRect.height );
     if ( header != null )
       header.add( rendererPane );
     else
       table.add( rendererPane );
-    rendererPane.paintComponent( g, component, table, cellRect.x, cellRect.y, cellRect.width, cellRect.height, true );
+    JBroTableHeaderUI.htmlHack( g, comp, cellRect );
+    rendererPane.paintComponent( g, comp, table, cellRect.x, cellRect.y, cellRect.width, cellRect.height, true );
   }
   
   public JBroTableUI withSpan( ModelSpan span ) {

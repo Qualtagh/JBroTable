@@ -365,8 +365,25 @@ public class JBroTableHeaderUI extends BasicTableHeaderUI {
       bounds.x += bounds.width;
     }
   }
+  
+  /**
+   * A hack to prepare HTML-based Swing components: size initialization is called inside paint method.
+   * @param g a non-null Graphics object
+   * @param component an HTML-based component that needs to be initialized
+   * @param cellRect a space where the component should be painted
+   */
+  public static void htmlHack( Graphics g, Component component, Rectangle cellRect ) {
+    component.setBounds( cellRect );
+    Graphics gg = g.create( -cellRect.width, -cellRect.height, cellRect.width, cellRect.height );
+    try {
+      component.paint( gg );
+    } finally {
+      gg.dispose();
+    }
+  }
 
   private void paintCell( Graphics g, Component component, Rectangle cellRect ) {
+    htmlHack( g, component, cellRect );
     rendererPane.add( component );
     rendererPane.paintComponent( g, component, header, cellRect.x, cellRect.y, cellRect.width, cellRect.height, true );
   }
@@ -380,9 +397,9 @@ public class JBroTableHeaderUI extends BasicTableHeaderUI {
     boolean parentUIdeterminesRolloverColumnItself = hasParentUI( renderer );
     boolean rollover = parentUIdeterminesRolloverColumnItself ? group == getHeader().getDraggedGroup() : group == selectedColumn;
     table.setCurrentLevel( group.getY() );
-    Component component = renderer.getTableCellRendererComponent( table, group.getHeaderValue(), rollover, rollover, group.getY(), getTableColumnModel().getColumnRelativeIndex( group ) );
+    Component comp = renderer.getTableCellRendererComponent( table, group.getHeaderValue(), rollover, rollover, group.getY(), getTableColumnModel().getColumnRelativeIndex( group ) );
     table.setCurrentLevel( null );
-    paintCell( g, component, cellRect );
+    paintCell( g, comp, cellRect );
   }
 
   public Dimension getGroupSize( JBroTableColumn group ) {

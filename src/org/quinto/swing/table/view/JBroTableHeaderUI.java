@@ -373,6 +373,8 @@ public class JBroTableHeaderUI extends BasicTableHeaderUI {
    * @param cellRect a space where the component should be painted
    */
   public static void htmlHack( Graphics g, Component component, Rectangle cellRect ) {
+    if ( component.getParent() == null )
+      return;
     component.setBounds( cellRect );
     Graphics gg = g.create( -cellRect.width, -cellRect.height, cellRect.width, cellRect.height );
     try {

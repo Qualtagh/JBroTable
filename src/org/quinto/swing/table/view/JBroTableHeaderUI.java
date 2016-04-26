@@ -844,8 +844,7 @@ public class JBroTableHeaderUI extends BasicTableHeaderUI {
           }
         }
         header.setDraggedDistance( draggedDistance );
-        if ( !moved )
-          repaintHeaderAndTable();
+        repaintHeaderAndTable();
       } else if ( resizingColumn != null ) {
         // TODO: child column resizing should affect only columns inside a parent group.
         // TODO: parent column resizing should proportionally affect all child columns.

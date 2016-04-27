@@ -10,6 +10,7 @@ import java.awt.Rectangle;
 import java.awt.Toolkit;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.IdentityHashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Set;
@@ -440,6 +441,21 @@ public class JBroTableUI extends BasicTableUI {
   }
   
   /**
+   * Get span bounds in pixels.
+   * @param col any column of span
+   * @param row any row of span
+   * @param includeSpacing if false, return the true cell bounds
+   * computed by subtracting the intercell spacing from the height
+   * and widths of the column and row models
+   * @return span bounds in pixels
+   * @see javax.swing.JTable#getCellRect
+   */
+  public Rectangle getSpanCoordinatesInPixels( int col, int row, boolean includeSpacing ) {
+    Rectangle rect = getSpanCoordinates( col, row );
+    return table.getCellRect( rect.y, rect.x, includeSpacing ).union( table.getCellRect( rect.y + rect.height - 1, rect.x + rect.width - 1, includeSpacing ) );
+  }
+  
+  /**
    * Find a span at position ( col, row ). Return its starting point and size in cells.
    * The value returned is <b>not</b> the span bounds in pixels.
    * @param col any column of span
@@ -449,30 +465,87 @@ public class JBroTableUI extends BasicTableUI {
    */
   public Rectangle getSpanCoordinates( int col, int row ) {
     Rectangle ret = new Rectangle( col, row, 1, 1 );
-    if ( col < 0 || row < 0 )
+    SpanWithId spanWithId = getSpanWithId( col, row );
+    if ( spanWithId == null )
       return ret;
     TableColumnModel cm = table.getColumnModel();
+    int columnCount = cm.getColumnCount();
+    int rowCount = table.getRowCount();
+    ModelData data = ( ( JBroTable )table ).getData();
+    int minRow = row;
+    for ( int i = row - 1; i >= 0; i-- ) {
+      if ( spanWithId.id.equals( data.getValue( table.convertRowIndexToModel( i ), spanWithId.idColumnIdx ) ) )
+        minRow = i;
+      else
+        break;
+    }
+    int maxRow = row;
+    for ( int i = row + 1; i < rowCount; i++ ) {
+      if ( spanWithId.id.equals( data.getValue( table.convertRowIndexToModel( i ), spanWithId.idColumnIdx ) ) )
+        maxRow = i;
+      else
+        break;
+    }
+    Set< String > columns = spanWithId.span.getColumns();
+    int minCol = col;
+    for ( int i = col - 1; i >= 0; i-- ) {
+      TableColumn spanCoveredColumn = cm.getColumn( i );
+      if ( columns.contains( ( String )spanCoveredColumn.getIdentifier() ) )
+        minCol = i;
+      else
+        break;
+    }
+    int maxCol = col;
+    for ( int i = col + 1; i < columnCount; i++ ) {
+      TableColumn spanCoveredColumn = cm.getColumn( i );
+      if ( columns.contains( ( String )spanCoveredColumn.getIdentifier() ) )
+        maxCol = i;
+      else
+        break;
+    }
+    ret.setBounds( minCol, minRow, maxCol - minCol + 1, maxRow - minRow + 1 );
+    return ret;
+  }
+  
+  public ModelSpan getSpan( int col, int row ) {
+    SpanWithId spanWithId = getSpanWithId( col, row );
+    return spanWithId == null ? null : spanWithId.span;
+  }
+  
+  public Object getSpanValue( int col, int row ) {
+    ModelSpan span = getSpan( col, row );
+    if ( span == null )
+      return table.getValueAt( col, row );
+    int modelRow = table.convertRowIndexToModel( row );
+    ModelData data = ( ( JBroTable )table ).getData();
+    return data.getValue( modelRow, span.getValueColumn() );
+  }
+  
+  private SpanWithId getSpanWithId( int col, int row ) {
+    if ( col < 0 || row < 0 )
+      return null;
+    TableColumnModel cm = table.getColumnModel();
     if ( cm == null )
-      return ret;
+      return null;
     int columnCount = cm.getColumnCount();
     if ( col >= columnCount )
-      return ret;
+      return null;
     TableColumn aColumn = cm.getColumn( col );
     if ( aColumn == null )
-      return ret;
+      return null;
     String columnName = ( String )aColumn.getIdentifier();
     Map< String, ModelSpan > columnSpans = spans.get( columnName );
     if ( columnSpans == null )
-      return ret;
+      return null;
     int rowCount = table.getRowCount();
     if ( row >= rowCount )
-      return ret;
+      return null;
     int modelRow = table.convertRowIndexToModel( row );
     if ( modelRow < 0 )
-      return ret;
+      return null;
     ModelData data = ( ( JBroTable )table ).getData();
     if ( data == null || modelRow >= data.getRowsCount() )
-      return ret;
+      return null;
     for ( Map.Entry< String, ModelSpan > spanWithId : columnSpans.entrySet() ) {
       int idColumnIdx = data.getIndexOfModelField( spanWithId.getKey() );
       if ( idColumnIdx < 0 )
@@ -480,41 +553,50 @@ public class JBroTableUI extends BasicTableUI {
       Object id = data.getValue( modelRow, idColumnIdx );
       if ( id == null )
         continue;
-      int minRow = row;
-      for ( int i = row - 1; i >= 0; i-- ) {
-        if ( id.equals( data.getValue( table.convertRowIndexToModel( i ), idColumnIdx ) ) )
-          minRow = i;
-        else
-          break;
-      }
-      int maxRow = row;
-      for ( int i = row + 1; i < rowCount; i++ ) {
-        if ( id.equals( data.getValue( table.convertRowIndexToModel( i ), idColumnIdx ) ) )
-          maxRow = i;
-        else
-          break;
-      }
-      ModelSpan span = spanWithId.getValue();
-      Set< String > columns = span.getColumns();
-      int minCol = col;
-      for ( int i = col - 1; i >= 0; i-- ) {
-        TableColumn spanCoveredColumn = cm.getColumn( i );
-        if ( columns.contains( ( String )spanCoveredColumn.getIdentifier() ) )
-          minCol = i;
-        else
-          break;
-      }
-      int maxCol = col;
-      for ( int i = col + 1; i < columnCount; i++ ) {
-        TableColumn spanCoveredColumn = cm.getColumn( i );
-        if ( columns.contains( ( String )spanCoveredColumn.getIdentifier() ) )
-          maxCol = i;
-        else
-          break;
-      }
-      ret.setBounds( minCol, minRow, maxCol - minCol + 1, maxRow - minRow + 1 );
-      break;
+      return new SpanWithId( spanWithId.getValue(), id, idColumnIdx );
     }
-    return ret;
+    return null;
+  }
+  
+  public Iterable< ModelSpan > getSpans() {
+    IdentityHashMap< ModelSpan, String > ret = new IdentityHashMap< ModelSpan, String >();
+    for ( Map< String, ModelSpan > value : spans.values() )
+      for ( ModelSpan span : value.values() )
+        ret.put( span, null );
+    return ret.keySet();
+  }
+
+  void onRowsSelected( int firstIndex, int lastIndex ) {
+    if ( spans.isEmpty() )
+      return;
+    int rc = table.getRowCount();
+    int cc = table.getColumnCount();
+    firstIndex = Math.min( Math.max( firstIndex, 0 ), rc - 1 );
+    lastIndex = Math.min( Math.max( lastIndex, 0 ), rc - 1 );
+    Rectangle firstRowRect = table.getCellRect( firstIndex, 0, false );
+    Rectangle lastRowRect = table.getCellRect( lastIndex, cc - 1, false );
+    Rectangle dirtyRegion = firstRowRect.union( lastRowRect );
+    for ( int s = 0; s < 2; s++ ) {
+      for ( int i = cc - 1; i >= 0; i-- ) {
+        Rectangle rect = getSpanCoordinates( i, s == 0 ? firstIndex : lastIndex );
+        if ( rect.width > 1 || rect.height > 1 ) {
+          dirtyRegion = dirtyRegion.union( table.getCellRect( rect.y, rect.x, false ) );
+          dirtyRegion = dirtyRegion.union( table.getCellRect( rect.y + rect.height - 1, rect.x + rect.width - 1, false ) );
+        }
+      }
+    }
+    table.repaint( dirtyRegion );
+  }
+  
+  private static class SpanWithId {
+    private final ModelSpan span;
+    private final Object id;
+    private final int idColumnIdx;
+
+    public SpanWithId( ModelSpan span, Object id, int idColumnIdx ) {
+      this.span = span;
+      this.id = id;
+      this.idColumnIdx = idColumnIdx;
+    }
   }
 }

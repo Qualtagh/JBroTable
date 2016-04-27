@@ -22,9 +22,9 @@ import javax.swing.table.JTableHeader;
 import javax.swing.table.TableColumn;
 import javax.swing.table.TableColumnModel;
 import org.apache.log4j.Logger;
+import org.quinto.swing.table.model.IModelFieldGroup;
 import org.quinto.swing.table.model.ModelData;
 import org.quinto.swing.table.model.ModelField;
-import org.quinto.swing.table.model.IModelFieldGroup;
 import org.quinto.swing.table.model.Utils;
 
 public class JBroTable extends JTable {
@@ -545,6 +545,12 @@ public class JBroTable extends JTable {
   @Override
   public JBroTableHeader getTableHeader() {
     return ( JBroTableHeader )super.getTableHeader();
+  }
+
+  @Override
+  public void valueChanged( ListSelectionEvent e ) {
+    super.valueChanged( e );
+    getUI().onRowsSelected( e.getFirstIndex(), e.getLastIndex() );
   }
   
   private class HeaderHeightWatcher implements TableColumnModelListener {

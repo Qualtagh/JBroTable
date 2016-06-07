@@ -6,6 +6,10 @@ import java.awt.Graphics2D;
 import java.awt.Insets;
 import javax.swing.border.Border;
 
+/**
+ * A border that rotates a delegate border by 180 degrees.
+ * <p>It causes a raised bevel border to be lowered and vice versa.</p>
+ */
 public class ReverseBorder implements Border {
   private final Border delegate;
 

@@ -3,7 +3,12 @@ package org.quinto.swing.table.view;
 import com.sun.java.swing.plaf.motif.MotifLookAndFeel;
 import com.sun.java.swing.plaf.windows.WindowsClassicLookAndFeel;
 import com.sun.java.swing.plaf.windows.WindowsLookAndFeel;
+import java.awt.Color;
+import java.awt.Component;
 import java.awt.FlowLayout;
+import java.awt.Font;
+import java.awt.Graphics;
+import java.awt.GridLayout;
 import java.awt.Toolkit;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
@@ -12,8 +17,11 @@ import java.lang.reflect.Method;
 import java.util.Collections;
 import javax.swing.JButton;
 import javax.swing.JFrame;
+import javax.swing.JLabel;
+import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.JTable;
+import javax.swing.SwingConstants;
 import javax.swing.UIManager;
 import javax.swing.UnsupportedLookAndFeelException;
 import javax.swing.plaf.metal.DefaultMetalTheme;
@@ -23,6 +31,7 @@ import javax.swing.plaf.metal.OceanTheme;
 import javax.swing.plaf.nimbus.NimbusLookAndFeel;
 import javax.swing.table.TableColumn;
 import org.apache.log4j.Logger;
+import org.quinto.swing.table.model.IModelFieldGroup;
 import org.quinto.swing.table.model.ModelData;
 import org.quinto.swing.table.model.ModelField;
 import org.quinto.swing.table.model.ModelFieldGroup;
@@ -39,6 +48,8 @@ public class JBroTableColumnModelShowcase {
 
   public static void main( String args[] ) {
     Utils.initSimpleConsoleLogger();
+    
+    // Look & Feel switcher.
     Method m;
     try {
       m = Toolkit.class.getDeclaredMethod( "setDesktopProperty", String.class, Object.class );
@@ -104,6 +115,8 @@ public class JBroTableColumnModelShowcase {
       }
     };
     lafChanger.actionPerformed( null );
+    
+    // Table model.
     int colCnt = 10;
     int rowCnt = 10;
     ModelField fields[] = new ModelField[ colCnt ];
@@ -127,11 +140,47 @@ public class JBroTableColumnModelShowcase {
         rows[ i ].setValue( j, i == j ? "sort me" : String.valueOf( ( char )( 'A' + j ) ) + i );
     }
     data.setRows( rows );
+    
+    // Table view.
     table = new JBroTable( data );
     table.setAutoCreateRowSorter( true );
+    table.getTableHeader().getUI().setCustomRenderer( new CustomTableHeaderRenderer() {
+      @Override
+      public Component getTableCellRendererComponent( final Component originalComponent, JTable table, Object value, boolean isSelected, boolean hasFocus, boolean isDragged, int row, int viewColumn, int modelColumn, IModelFieldGroup dataField ) {
+        if ( dataField == null || !( originalComponent instanceof JLabel ) )
+          return originalComponent;
+        JLabel ret = ( JLabel )originalComponent;
+        String fieldName = dataField.getIdentifier();
+        // "GC" cell is right aligned. Other cells are centered.
+        ret.setHorizontalAlignment( "GC".equals( fieldName ) ? SwingConstants.RIGHT : SwingConstants.CENTER );
+        // "D" cell caption is written in bold. Other captions have plain font.
+        ret.setFont( ret.getFont().deriveFont( "D".equals( fieldName ) ? Font.BOLD : Font.PLAIN ) );
+        // "B" cell would be half-transparent red with Windows L&F (not classic).
+        // Note that background is reset on each call by underlying renderer so there's no need to reset background for other cells.
+        // Properties like alignment and font should be reset on each call if they were changed before.
+        if ( "B".equals( fieldName ) && !originalComponent.getClass().getName().contains( "DefaultTableCellHeaderRenderer" ) )
+          ret.setBackground( new Color( 220, 50, 50, 50 ) );
+        // "C" cell would be half-transparent red.
+        if ( "C".equals( fieldName ) ) {
+          JPanel p = new JPanel( new GridLayout( 1, 1 ) ) {
+            @Override
+            public void paint( Graphics g ) {
+              super.paint( g );
+              g.setColor( new Color( 220, 50, 50, 50 ) );
+              g.fillRect( 0, 0, getWidth(), getHeight() );
+            }
+          };
+          p.add( ret );
+          return p;
+        }
+        return ret;
+      }
+    } );
     System.out.println( table.getColumnModel() );
     for ( TableColumn tc : Collections.list( table.getColumnModel().getColumns() ) )
       System.out.println( tc.getHeaderValue() );
+    
+    // Frame.
     frame = new JFrame( "Testing" );
     frame.setDefaultCloseOperation( JFrame.EXIT_ON_CLOSE );
     frame.setLayout( new FlowLayout() );

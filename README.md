@@ -24,8 +24,10 @@ New features:
 - Generic support for L&Fs (it means they're not reimplemented, they're used as delegates for rendering)
 - Easy to use table model API
 - Table header cells highlighting on mouse over
+- Table header cells etching on mouse dragging
 - Table cells spans API to merge cells inside a table itself (not in a header)
 - Drawing of dragged columns group in a table itself (not only in a header)
+- Custom header cell renderer support
 - Partial test coverage
 - Setting custom rowspan. Rowspan is calculated automatically in a greedy way, but sometimes such a picture is needed (and it can't be calculated automatically):
 

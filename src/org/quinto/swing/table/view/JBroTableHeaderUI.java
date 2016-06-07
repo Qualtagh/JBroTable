@@ -35,6 +35,7 @@ import javax.swing.table.TableCellRenderer;
 import javax.swing.table.TableColumn;
 import org.apache.log4j.Logger;
 import org.quinto.swing.table.model.IModelFieldGroup;
+import org.quinto.swing.table.model.ModelData;
 
 public class JBroTableHeaderUI extends BasicTableHeaderUI {
   private static final Logger LOGGER = Logger.getLogger( JBroTableHeaderUI.class );
@@ -50,6 +51,7 @@ public class JBroTableHeaderUI extends BasicTableHeaderUI {
   private boolean updating;
   private ComponentUI headerDelegate;
   private ReverseBorder lastBorder;
+  private CustomTableHeaderRenderer customRenderer;
   
   public JBroTableHeaderUI( JBroTable table ) {
     this.table = table;
@@ -65,6 +67,14 @@ public class JBroTableHeaderUI extends BasicTableHeaderUI {
       installUI( header );
     }
     updating = false;
+  }
+
+  public CustomTableHeaderRenderer getCustomRenderer() {
+    return customRenderer;
+  }
+
+  public void setCustomRenderer( CustomTableHeaderRenderer customRenderer ) {
+    this.customRenderer = customRenderer;
   }
   
   public JBroTableHeader getHeader() {
@@ -401,7 +411,11 @@ public class JBroTableHeaderUI extends BasicTableHeaderUI {
     boolean parentUIdeterminesRolloverColumnItself = hasParentUI( renderer );
     boolean rollover = parentUIdeterminesRolloverColumnItself ? group == getHeader().getDraggedGroup() : group == selectedColumn;
     table.setCurrentLevel( group.getY() );
-    Component comp = renderer.getTableCellRendererComponent( table, group.getHeaderValue(), rollover, rollover, group.getY(), getTableColumnModel().getColumnRelativeIndex( group ) );
+    Object value = group.getHeaderValue();
+    int row = group.getY();
+    JBroTableColumnModel tcm = getTableColumnModel();
+    int viewColumn = tcm.getColumnRelativeIndex( group );
+    Component comp = renderer.getTableCellRendererComponent( table, value, rollover, rollover, row, viewColumn );
     table.setCurrentLevel( null );
     if ( !parentUIdeterminesRolloverColumnItself && comp instanceof JComponent && group == getHeader().getDraggedGroup() ) {
       Border border = ( ( JComponent )comp ).getBorder();
@@ -410,6 +424,29 @@ public class JBroTableHeaderUI extends BasicTableHeaderUI {
           lastBorder = new ReverseBorder( border );
         ( ( JComponent )comp ).setBorder( lastBorder );
       }
+    }
+    if ( customRenderer != null ) {
+      IModelFieldGroup dataField = null;
+      int modelColumn = group.getModelIndex();
+      ModelData data = table.getData();
+      if ( data != null ) {
+        if ( modelColumn >= 0 && data.getFields() != null && modelColumn < data.getFields().length )
+          dataField = data.getFields()[ modelColumn ];
+        else {
+          int coords[] = data.getIndexOfModelFieldGroup( String.valueOf( group.getIdentifier() ) );
+          int level = coords[ 1 ];
+          int col = coords[ 0 ];
+          if ( level >= 0 && col >= 0 ) {
+            List< IModelFieldGroup[] > fields = data.getFieldGroups();
+            if ( fields.size() > level ) {
+              IModelFieldGroup levelFields[] = fields.get( level );
+              if ( levelFields.length > col )
+                dataField = levelFields[ col ];
+            }
+          }
+        }
+      }
+      comp = customRenderer.getTableCellRendererComponent( comp, table, value, rollover, rollover, group == getHeader().getDraggedGroup(), row, viewColumn, modelColumn, dataField );
     }
     paintCell( g, comp, cellRect );
   }

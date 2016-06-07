@@ -128,4 +128,6 @@ Result (Windows 8 theme):
 
 [Download](https://github.com/Qualtagh/JBroTable/releases/latest) the latest version (ready to use jar file).
 
+Take a tour through [[tutorials]] page for more complicated examples.
+
 Released into public domain.

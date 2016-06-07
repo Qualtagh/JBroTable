@@ -26,6 +26,7 @@ import javax.swing.JViewport;
 import javax.swing.RowSorter;
 import javax.swing.SwingUtilities;
 import javax.swing.UIManager;
+import javax.swing.border.Border;
 import javax.swing.event.MouseInputListener;
 import javax.swing.plaf.ComponentUI;
 import javax.swing.plaf.basic.BasicTableHeaderUI;
@@ -48,6 +49,7 @@ public class JBroTableHeaderUI extends BasicTableHeaderUI {
   private List< Integer > rowHeights;
   private boolean updating;
   private ComponentUI headerDelegate;
+  private ReverseBorder lastBorder;
   
   public JBroTableHeaderUI( JBroTable table ) {
     this.table = table;
@@ -88,7 +90,7 @@ public class JBroTableHeaderUI extends BasicTableHeaderUI {
       boolean accessible = field.isAccessible();
       if ( !accessible )
         field.setAccessible( true );
-      Object ret = ( Object )field.get( ui );
+      Object ret = field.get( ui );
       if ( !accessible )
         field.setAccessible( false );
       return ret;
@@ -401,6 +403,14 @@ public class JBroTableHeaderUI extends BasicTableHeaderUI {
     table.setCurrentLevel( group.getY() );
     Component comp = renderer.getTableCellRendererComponent( table, group.getHeaderValue(), rollover, rollover, group.getY(), getTableColumnModel().getColumnRelativeIndex( group ) );
     table.setCurrentLevel( null );
+    if ( !parentUIdeterminesRolloverColumnItself && comp instanceof JComponent && group == getHeader().getDraggedGroup() ) {
+      Border border = ( ( JComponent )comp ).getBorder();
+      if ( border != null ) {
+        if ( lastBorder == null || lastBorder.getDelegate() != border )
+          lastBorder = new ReverseBorder( border );
+        ( ( JComponent )comp ).setBorder( lastBorder );
+      }
+    }
     paintCell( g, comp, cellRect );
   }
 

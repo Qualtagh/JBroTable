@@ -1,6 +1,8 @@
 # JBroTable
 JTable with a groupable header.
 
+Standard Java Swing implementation of a table (JTable) allows to have only one header row by default. It's quite hard to customize a JTable to have more than one row in a header. The JBroTable library lets you do it with ease!
+
 The implementation is based on [this](http://stackoverflow.com/a/20208995/4540645) StackOverflow answer by [MadProgrammer](http://stackoverflow.com/users/992484/madprogrammer).
 
 Supported Look & Feels:

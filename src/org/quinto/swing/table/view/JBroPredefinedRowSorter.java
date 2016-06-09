@@ -5,7 +5,7 @@ import javax.swing.SortOrder;
 import org.quinto.swing.table.model.ModelData;
 import org.quinto.swing.table.model.ModelField;
 
-public class JBroPredefinedRowSorter extends PredefinedRowSorter {
+public class JBroPredefinedRowSorter< This extends JBroPredefinedRowSorter< This > > extends PredefinedRowSorter< This > {
   private static final SortKey EMPTY_ARRAY[] = new SortKey[ 0 ];
   
   public JBroPredefinedRowSorter( JBroTable table ) {
@@ -47,11 +47,11 @@ public class JBroPredefinedRowSorter extends PredefinedRowSorter {
     return EMPTY_ARRAY;
   }
 
-  public PredefinedRowSorter withPostColumnsByName( SortKey... modelColumns ) {
+  public This withPostColumnsByName( SortKey... modelColumns ) {
     return super.withPostColumns( toNumericKeys( modelColumns ) );
   }
 
-  public PredefinedRowSorter withPreColumnsByName( SortKey... modelColumns ) {
+  public This withPreColumnsByName( SortKey... modelColumns ) {
     return super.withPreColumns( toNumericKeys( modelColumns ) );
   }
 

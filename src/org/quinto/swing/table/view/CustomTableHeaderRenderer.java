@@ -20,5 +20,5 @@ public interface CustomTableHeaderRenderer {
    * @param dataField model column (or column group) that corresponds to this cell
    * @return a component that defines rendering of the current table header cell
    */
-  public Component getTableCellRendererComponent( Component originalComponent, JBroTable table, Object value, boolean isSelected, boolean hasFocus, boolean isDragged, int row, int viewColumn, int modelColumn, IModelFieldGroup dataField );
+  Component getTableCellRendererComponent( Component originalComponent, JBroTable table, Object value, boolean isSelected, boolean hasFocus, boolean isDragged, int row, int viewColumn, int modelColumn, IModelFieldGroup dataField );
 }

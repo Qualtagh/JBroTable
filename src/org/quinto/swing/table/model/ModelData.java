@@ -176,7 +176,7 @@ public class ModelData implements Serializable {
     List< IModelFieldGroup > parents = new ArrayList< IModelFieldGroup >();
     FieldGroupsLoop:
     for ( IModelFieldGroup fieldGroup : fieldGroups ) {
-      ModelFieldGroup parent = ( ModelFieldGroup )fieldGroup.getParent();
+      ModelFieldGroup parent = fieldGroup.getParent();
       if ( parent != null && parent.getChildrenRowspan() == -1 ) {
         int childrenRowspan = 0;
         for ( IModelFieldGroup child : parent.getChildren() ) {

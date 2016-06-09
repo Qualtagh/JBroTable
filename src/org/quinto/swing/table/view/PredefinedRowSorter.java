@@ -17,7 +17,7 @@ import javax.swing.table.TableModel;
 import javax.swing.table.TableRowSorter;
 import org.apache.log4j.Logger;
 
-public class PredefinedRowSorter extends TableRowSorter< TableModel > {
+public class PredefinedRowSorter< This extends PredefinedRowSorter< This > > extends TableRowSorter< TableModel > {
   private static final Logger LOGGER = Logger.getLogger( PredefinedRowSorter.class );
   private static final SortKey EMPTY_ARRAY[] = new SortKey[ 0 ];
   
@@ -51,7 +51,7 @@ public class PredefinedRowSorter extends TableRowSorter< TableModel > {
         throw new IllegalArgumentException( "SortKey column must be unique (column " + key.getColumn() + " is already contained in " + ( post ? "post" : "pre" ) + " columns list)" );
   }
   
-  public PredefinedRowSorter withPreColumns( SortKey... modelColumns ) {
+  public This withPreColumns( SortKey... modelColumns ) {
     if ( modelColumns == null )
       modelColumns = EMPTY_ARRAY;
     if ( !Arrays.equals( preColumns, modelColumns ) ) {
@@ -59,10 +59,10 @@ public class PredefinedRowSorter extends TableRowSorter< TableModel > {
       preColumns = modelColumns;
       setSortKeys( getSortKeys() );
     }
-    return this;
+    return ( This )this;
   }
   
-  public PredefinedRowSorter withPostColumns( SortKey... modelColumns ) {
+  public This withPostColumns( SortKey... modelColumns ) {
     if ( modelColumns == null )
       modelColumns = EMPTY_ARRAY;
     if ( !Arrays.equals( postColumns, modelColumns ) ) {
@@ -70,7 +70,7 @@ public class PredefinedRowSorter extends TableRowSorter< TableModel > {
       postColumns = modelColumns;
       setSortKeys( getSortKeys() );
     }
-    return this;
+    return ( This )this;
   }
 
   public JTable getTable() {

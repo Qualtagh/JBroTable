@@ -52,7 +52,7 @@ Dependencies:
 - Apache Log4J
 - JUnit (for tests only)
 
-[__Animated demo__](/github/demo.gif) (2.5M)
+[__Animated demo__](https://github.com/Qualtagh/JBroTable/wiki/Animated-demo) (2.5M)
 
 Sample usage:
 

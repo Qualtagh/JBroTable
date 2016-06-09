@@ -98,7 +98,7 @@ public class TutorialAdvancedSpanCells {
       .withSpan( new ModelSpan( "FAMILY_ID", "LAST_NAME" ).withColumns( "LAST_NAME" ) )
       .withSpan( new ModelSpan( "USER_ID", "FIRST_NAME" ).withColumns( "FIRST_NAME", "LAST_NAME" ) )
       .withSpan( new ModelSpan( "TOTAL_ID", "DEPARTMENT" ).withColumns( "DEPARTMENT", "FIRST_NAME", "LAST_NAME" ) )
-      .withSpan( new ModelSpan( "DEPARTMENT", "DEPARTMENT" ).withColumns( "DEPARTMENT" ) ) );
+      .withSpan( new ModelSpan( "DEPARTMENT", "DEPARTMENT" ).withColumns( "DEPARTMENT" ).withDrawAsHeader( true ) ) );
     
     JFrame frame = new JFrame( "Test" );
     frame.setDefaultCloseOperation( JFrame.EXIT_ON_CLOSE );

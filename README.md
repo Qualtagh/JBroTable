@@ -124,11 +124,11 @@ public class Sample {
 
 Result (Windows 8 theme):
 
-![Result](/github/windows8.png)
+![Result](/github/screenshots/windows8.png)
 
 [More screenshots](https://github.com/Qualtagh/JBroTable/wiki/Screenshots) with different L&Fs are available at wiki.
 
-[Download](https://github.com/Qualtagh/JBroTable/releases/latest) the latest version (ready to use jar file).
+[Download](/releases/latest) the latest version (ready to use jar file).
 
 Take a tour through [tutorials](https://github.com/Qualtagh/JBroTable/wiki/Tutorials) page for more complicated examples.
 

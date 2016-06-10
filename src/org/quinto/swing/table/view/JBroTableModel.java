@@ -54,12 +54,10 @@ public class JBroTableModel extends AbstractTableModel {
       }
     }
     this.data = data;
-    if ( structureChanged ) {
+    if ( structureChanged )
       fireTableStructureChanged();
-    } else if ( data != null ) {
-      int lastRow = structureChanged ? 0 : Math.max( data.getRowsCount(), this.data.getRowsCount() );
-      fireTableChanged( new TableModelEvent( this, 0, lastRow ) );
-    }
+    else if ( data != null )
+      fireTableChanged( new TableModelEvent( this, 0, Integer.MAX_VALUE ) );
   }
   
   public void removeRow( int row ) {

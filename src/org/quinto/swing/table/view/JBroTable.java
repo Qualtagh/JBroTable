@@ -25,7 +25,6 @@ import javax.swing.event.ListSelectionEvent;
 import javax.swing.event.TableColumnModelEvent;
 import javax.swing.event.TableColumnModelListener;
 import javax.swing.event.TableModelEvent;
-import javax.swing.event.TableModelListener;
 import javax.swing.plaf.TableHeaderUI;
 import javax.swing.plaf.TableUI;
 import javax.swing.table.JTableHeader;
@@ -46,6 +45,12 @@ public class JBroTable extends JTable {
   private HeaderHeightWatcher headerHeightWatcher;
   private Integer currentLevel;
   private JScrollPane scrollPane;
+  /**
+   * This field points to a main table for a fixed table
+   * (fixed table is just a non-scrollable part of the main table).
+   * This field is null for a regular table.
+   */
+  private JBroTable masterTable;
 
   public JBroTable() {
     this( null );
@@ -164,25 +169,20 @@ public class JBroTable extends JTable {
     header.setPreferredSize( new Dimension( cmodel.getTotalColumnWidth(), h ) );
   }
   
-  protected boolean isFixed() {
-    return false;
-  }
-  
   private void checkFieldWidths() {
     ModelData data = getData();
-    if ( data == null ) {
+    if ( data == null )
       return;
-    }
     ModelField fields[] = data.getFields();
-    if ( fields == null ) {
+    if ( fields == null )
       return;
-    }
     boolean changed = false;
+    boolean tableIsJustAFixedPart = getMasterTable() != null;
     for ( int i = columnModel.getColumnCount() - 1; i >= 0; i-- ) {
       TableColumn column = columnModel.getColumn( i );
       int modelIndex = column.getModelIndex();
       ModelField field = fields[ modelIndex ];
-      if ( field.isVisible() && field.isFixed() == isFixed() ) {
+      if ( field.isVisible() && field.isFixed() == tableIsJustAFixedPart ) {
         String headerValue = field.getCaption();
         if ( !Utils.equals( headerValue, column.getHeaderValue() ) ) {
           column.setHeaderValue( headerValue );
@@ -201,11 +201,8 @@ public class JBroTable extends JTable {
         removeColumn( column );
       }
     }
-    if ( changed ) {
-      updateScrollPane();
-      if ( getTableHeader() != null )
-        getTableHeader().repaint();
-    }
+    if ( changed )
+      tableStructureChanged();
   }
   
   /**
@@ -595,7 +592,7 @@ public class JBroTable extends JTable {
     if ( scrollPane != null )
       return scrollPane;
     scrollPane = new JScrollPane( this );
-    if ( !isFixed() ) {
+    if ( getMasterTable() == null ) {
       updateScrollPane();
       addPropertyChangeListener( new PropertyChangeListener() {
         @Override
@@ -624,11 +621,29 @@ public class JBroTable extends JTable {
   public void tableChanged( TableModelEvent e ) {
     super.tableChanged( e );
     if ( e == null || e.getFirstRow() == TableModelEvent.HEADER_ROW )
-      updateScrollPane();
+      tableStructureChanged();
+  }
+  
+  private void tableStructureChanged() {
+    updateScrollPane();
+    JBroTableHeader header = getTableHeader();
+    if ( header != null ) {
+      header.updateUI();
+      header.repaint();
+    }
+  }
+
+  protected JBroTable getMasterTable() {
+    return masterTable;
+  }
+
+  @Override
+  public boolean hasFocus() {
+    return masterTable == null ? super.hasFocus() : masterTable.hasFocus();
   }
   
   private void updateScrollPane() {
-    if ( scrollPane == null || isFixed() )
+    if ( scrollPane == null || getMasterTable() != null )
       return;
     ModelData data = getData();
     boolean hasFixed = false;
@@ -647,21 +662,9 @@ public class JBroTable extends JTable {
       }
       return;
     }
-    JBroTable fixed;
     if ( scrollPane.getRowHeader() == null ) {
-      final JBroTable main = this;
-      fixed = new JBroTable( data ) {
-        @Override
-        public boolean hasFocus() {
-          return main.hasFocus();
-        }
-
-        @Override
-        protected boolean isFixed() {
-          return true;
-        }
-      };
-      fixed.setData( null );
+      JBroTable fixed = newInstance();
+      fixed.masterTable = this;
       fixed.setModel( getModel() );
       fixed.setSelectionModel( getSelectionModel() );
       fixed.setRowSorter( getRowSorter() );
@@ -721,6 +724,14 @@ public class JBroTable extends JTable {
         }
       } );
     }
+  }
+  
+  /**
+   * This method should be overridden for proper creation of fixed non-scrollable part of the table.
+   * @return new instance of an inherited class
+   */
+  protected JBroTable newInstance() {
+    return new JBroTable();
   }
   
   private class HeaderHeightWatcher implements TableColumnModelListener {

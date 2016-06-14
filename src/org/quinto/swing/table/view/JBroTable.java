@@ -1,26 +1,37 @@
 package org.quinto.swing.table.view;
 
+import java.awt.Component;
 import java.awt.Dimension;
 import java.awt.Font;
 import java.awt.FontMetrics;
 import java.awt.Rectangle;
 import java.awt.Toolkit;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
+import java.beans.PropertyChangeEvent;
+import java.beans.PropertyChangeListener;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import javax.swing.JScrollPane;
 import javax.swing.JTable;
+import javax.swing.JViewport;
 import javax.swing.event.ChangeEvent;
+import javax.swing.event.ChangeListener;
 import javax.swing.event.ListSelectionEvent;
 import javax.swing.event.TableColumnModelEvent;
 import javax.swing.event.TableColumnModelListener;
+import javax.swing.event.TableModelEvent;
+import javax.swing.event.TableModelListener;
 import javax.swing.plaf.TableHeaderUI;
 import javax.swing.plaf.TableUI;
 import javax.swing.table.JTableHeader;
 import javax.swing.table.TableColumn;
 import javax.swing.table.TableColumnModel;
+import javax.swing.table.TableModel;
 import org.apache.log4j.Logger;
 import org.quinto.swing.table.model.IModelFieldGroup;
 import org.quinto.swing.table.model.ModelData;
@@ -34,6 +45,7 @@ public class JBroTable extends JTable {
   private Integer headerHeight;
   private HeaderHeightWatcher headerHeightWatcher;
   private Integer currentLevel;
+  private JScrollPane scrollPane;
 
   public JBroTable() {
     this( null );
@@ -152,6 +164,10 @@ public class JBroTable extends JTable {
     header.setPreferredSize( new Dimension( cmodel.getTotalColumnWidth(), h ) );
   }
   
+  protected boolean isFixed() {
+    return false;
+  }
+  
   private void checkFieldWidths() {
     ModelData data = getData();
     if ( data == null ) {
@@ -166,7 +182,7 @@ public class JBroTable extends JTable {
       TableColumn column = columnModel.getColumn( i );
       int modelIndex = column.getModelIndex();
       ModelField field = fields[ modelIndex ];
-      if ( field.isVisible() ) {
+      if ( field.isVisible() && field.isFixed() == isFixed() ) {
         String headerValue = field.getCaption();
         if ( !Utils.equals( headerValue, column.getHeaderValue() ) ) {
           column.setHeaderValue( headerValue );
@@ -186,7 +202,9 @@ public class JBroTable extends JTable {
       }
     }
     if ( changed ) {
-      getTableHeader().repaint();
+      updateScrollPane();
+      if ( getTableHeader() != null )
+        getTableHeader().repaint();
     }
   }
   
@@ -196,6 +214,13 @@ public class JBroTable extends JTable {
    */
   public void setData( ModelData data ) {
     getModel().setData( data );
+    checkFieldWidths();
+    refresh();
+  }
+
+  @Override
+  public void setModel( TableModel dataModel ) {
+    super.setModel( dataModel );
     checkFieldWidths();
     refresh();
   }
@@ -551,6 +576,151 @@ public class JBroTable extends JTable {
   public void valueChanged( ListSelectionEvent e ) {
     super.valueChanged( e );
     getUI().onRowsSelected( e.getFirstIndex(), e.getLastIndex() );
+  }
+  
+  /**
+   * This method creates (if it doesn't exist yet) and returns a scroll pane that contains a viewport
+   * with fixed columns. This scroll pane may have a null viewport if a model contains no visible
+   * fixed columns.
+   * <p>To obtain a left fixed table, use the following code:<br><br>
+   * <code>
+   * JViewport viewport = scrollPane.getRowHeader();<br>
+   * if ( viewport != null ) {<br>
+   * &nbsp;&nbsp;JBroTable fixed = ( JBroTable )viewport.getView();<br>
+   * }
+   * </code></p>
+   * @return a scroll pane with a fixed left part (if required)
+   */
+  public JScrollPane getScrollPane() {
+    if ( scrollPane != null )
+      return scrollPane;
+    scrollPane = new JScrollPane( this );
+    if ( !isFixed() ) {
+      updateScrollPane();
+      addPropertyChangeListener( new PropertyChangeListener() {
+        @Override
+        public void propertyChange( PropertyChangeEvent e ) {
+          JViewport viewport = scrollPane.getRowHeader();
+          if ( viewport == null )
+            return;
+          Component comp = viewport.getView();
+          if ( !( comp instanceof JBroTable ) )
+            return;
+          JBroTable fixed = ( JBroTable )comp;
+          String property = e.getPropertyName();
+          if ( "selectionModel".equals( property ) )
+            fixed.setSelectionModel( getSelectionModel() );
+          else if ( "rowSorter".equals( property ) )
+            fixed.setRowSorter( getRowSorter() );
+          else if ( "model".equals( property ) )
+            fixed.setModel( getModel() );
+        }
+      } );
+    }
+    return scrollPane;
+  }
+
+  @Override
+  public void tableChanged( TableModelEvent e ) {
+    super.tableChanged( e );
+    if ( e == null || e.getFirstRow() == TableModelEvent.HEADER_ROW )
+      updateScrollPane();
+  }
+  
+  private void updateScrollPane() {
+    if ( scrollPane == null || isFixed() )
+      return;
+    ModelData data = getData();
+    boolean hasFixed = false;
+    if ( data != null ) {
+      for ( ModelField field : data.getFields() ) {
+        if ( field.isFixed() && field.isVisible() ) {
+          hasFixed = true;
+          break;
+        }
+      }
+    }
+    if ( !hasFixed ) {
+      if ( scrollPane.getRowHeader() != null ) {
+        scrollPane.setCorner( JScrollPane.UPPER_LEFT_CORNER, null );
+        scrollPane.setRowHeader( null );
+      }
+      return;
+    }
+    JBroTable fixed;
+    if ( scrollPane.getRowHeader() == null ) {
+      final JBroTable main = this;
+      fixed = new JBroTable( data ) {
+        @Override
+        public boolean hasFocus() {
+          return main.hasFocus();
+        }
+
+        @Override
+        protected boolean isFixed() {
+          return true;
+        }
+      };
+      fixed.setData( null );
+      fixed.setModel( getModel() );
+      fixed.setSelectionModel( getSelectionModel() );
+      fixed.setRowSorter( getRowSorter() );
+      fixed.setAutoResizeMode( getAutoResizeMode() );
+      fixed.setFocusable( false );
+      fixed.setUpdateSelectionOnSort( false );
+      fixed.setPreferredScrollableViewportSize( fixed.getPreferredSize() );
+      
+      MouseAdapter ma = new MouseAdapter() {
+        private TableColumn column;
+        private int columnWidth;
+        private int pressedX;
+
+        @Override
+        public void mousePressed( MouseEvent e ) {
+          JTableHeader header = ( JTableHeader )e.getComponent();
+          TableColumnModel tcm = header.getColumnModel();
+          int columnIndex = tcm.getColumnIndexAtX( e.getX() - 3 );
+          if ( columnIndex == tcm.getColumnCount() - 1 &&
+               header.getCursor() == JBroTableHeaderUI.RESIZE_CURSOR &&
+               header.getTable().getAutoResizeMode() != JTable.AUTO_RESIZE_OFF ) {
+            column = tcm.getColumn( columnIndex );
+            columnWidth = column.getWidth();
+            pressedX = e.getX();
+          }
+        }
+
+        @Override
+        public void mouseReleased( MouseEvent e ) {
+          column = null;
+          columnWidth = 0;
+          pressedX = 0;
+        }
+
+        @Override
+        public void mouseDragged( MouseEvent e ) {
+          JTableHeader header = ( JTableHeader )e.getComponent();
+          JTable table = header.getTable();
+          if ( column != null ) {
+            int width = columnWidth - pressedX + e.getX();
+            column.setPreferredWidth( width );
+          }
+          table.setPreferredScrollableViewportSize( table.getPreferredSize() );
+        }
+      };
+      JBroTableHeader header = fixed.getTableHeader();
+      header.addMouseListener( ma );
+      header.addMouseMotionListener( ma );
+      
+      scrollPane.setRowHeaderView( fixed );
+      scrollPane.setCorner( JScrollPane.UPPER_LEFT_CORNER, fixed.getTableHeader() );
+      scrollPane.getRowHeader().addChangeListener( new ChangeListener() {
+        @Override
+        public void stateChanged( ChangeEvent e ) {
+          JViewport viewport = ( JViewport )e.getSource();
+          scrollPane.getVerticalScrollBar().setValue( viewport.getViewPosition().y );
+        }
+      } );
+    }
   }
   
   private class HeaderHeightWatcher implements TableColumnModelListener {

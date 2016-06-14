@@ -39,8 +39,8 @@ import org.quinto.swing.table.model.ModelData;
 
 public class JBroTableHeaderUI extends BasicTableHeaderUI {
   private static final Logger LOGGER = Logger.getLogger( JBroTableHeaderUI.class );
-  private static final Cursor resizeCursor = Cursor.getPredefinedCursor( Cursor.E_RESIZE_CURSOR );
   private static final Map< String, Boolean > EXISTING_PARENT_UIS = new HashMap< String, Boolean >();
+  static final Cursor RESIZE_CURSOR = Cursor.getPredefinedCursor( Cursor.E_RESIZE_CURSOR );
   
   private JBroTableColumn selectedColumn;
   private final JBroTable table;
@@ -709,7 +709,7 @@ public class JBroTableHeaderUI extends BasicTableHeaderUI {
 
   public class MouseInputHandler implements MouseInputListener {
     private int mouseXOffset;
-    private Cursor otherCursor = resizeCursor;
+    private Cursor otherCursor = RESIZE_CURSOR;
 
     @Override
     public void mouseClicked( MouseEvent e ) {
@@ -803,12 +803,12 @@ public class JBroTableHeaderUI extends BasicTableHeaderUI {
       JBroTableColumn resizingColumn = getResizingColumn( point );
       Cursor cursor = header.getCursor();
       if ( canResize( point, resizingColumn, header ) ) {
-        if ( cursor != resizeCursor ) {
-          header.setCursor( resizeCursor );
+        if ( cursor != RESIZE_CURSOR ) {
+          header.setCursor( RESIZE_CURSOR );
           otherCursor = cursor;
         }
-      } else if ( cursor == resizeCursor )
-        header.setCursor( otherCursor == resizeCursor ? null : otherCursor );
+      } else if ( cursor == RESIZE_CURSOR )
+        header.setCursor( otherCursor == RESIZE_CURSOR ? null : otherCursor );
       updateRolloverColumn( e );
     }
 

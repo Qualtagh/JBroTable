@@ -1,6 +1,6 @@
 package org.quinto.swing.table.model;
 
-public interface IModelFieldGroup {
+public interface IModelFieldGroup extends Cloneable {
   String getCaption();
   void setCaption( String caption );
   
@@ -16,6 +16,9 @@ public interface IModelFieldGroup {
   
   boolean isManageable();
   void setManageable( boolean manageable );
+  
+  boolean isFixed();
+  void setFixed( boolean fixed );
   
   IModelFieldGroup clone();
   boolean equals( Object obj, boolean withParent );

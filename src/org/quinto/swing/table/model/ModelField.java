@@ -7,12 +7,13 @@ import java.util.LinkedHashMap;
  * Data field attributes.
  */
 public class ModelField implements Serializable, Comparable< ModelField >, IModelFieldGroup {
-  private static final long serialVersionUID = 2L;
+  private static final long serialVersionUID = 3L;
   
   private String identifier;
   private String caption;
   private ModelFieldGroup parent;
   private int rowspan;
+  private boolean fixed;
   private boolean manageable;
   private boolean visible;
   private Integer defaultWidth;
@@ -108,6 +109,29 @@ public class ModelField implements Serializable, Comparable< ModelField >, IMode
   }
   
   @Override
+  public void setFixed( boolean fixed ) {
+    this.fixed = fixed;
+    if ( fixed && parent != null )
+      parent.setFixed( fixed );
+  }
+
+  @Override
+  public boolean isFixed() {
+    return fixed;
+  }
+
+  /**
+   * Fix (dock, freeze) this column at the left side of the table. Scrolling won't move it.
+   * @param fixed {@code false} - this column can be scrolled, {@code true} - this column is fixed at the left side of the table<br>
+   * {@code true} value would also fix parent columns group at the left side
+   * @return this
+   */
+  public ModelField withFixed( boolean fixed ) {
+    setFixed( fixed );
+    return this;
+  }
+  
+  @Override
   public void setManageable( boolean manageable ) {
     this.manageable = manageable;
     if ( !manageable && parent != null )
@@ -121,7 +145,8 @@ public class ModelField implements Serializable, Comparable< ModelField >, IMode
 
   /**
    * Determines user ability to move or hide this column.
-   * @param manageable true - this column can be hidden, shown and moved, false - this column is fixed
+   * @param manageable {@code true} - this column can be hidden, shown and moved, {@code false} - this column is fixed<br>
+   * {@code false} value would also make parent unmanageable
    * @return this
    */
   public ModelField withManageable( boolean manageable ) {
@@ -145,8 +170,16 @@ public class ModelField implements Serializable, Comparable< ModelField >, IMode
   
   @Override
   public ModelField clone() {
-    return new ModelField( identifier, caption )
+    ModelField ret;
+    try {
+      ret = ( ModelField )super.clone();
+    } catch ( CloneNotSupportedException e ) {
+      ret = new ModelField();
+    }
+    return ret.withIdentifier( identifier )
+              .withCaption( caption )
               .withVisible( visible )
+              .withFixed( fixed )
               .withManageable( manageable )
               .withParent( parent )
               .withRowspan( rowspan )

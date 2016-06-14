@@ -47,6 +47,9 @@ ASCII (if a picture is not shown):
 +-------+-------+-------+-------+
 ```
 
+Extra features based on other sources:
+- Columns fixed at the left side of the table (based on [this answer](http://stackoverflow.com/a/2548872/4540645) given by [Rob Camick](http://stackoverflow.com/users/131872/camickr))
+
 Dependencies:
 - Java 6 and higher
 - Apache Log4J

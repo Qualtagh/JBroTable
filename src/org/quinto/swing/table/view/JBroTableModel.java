@@ -46,7 +46,7 @@ public class JBroTableModel extends AbstractTableModel {
               structureChanged = true;
               break;
             }
-          } else if ( f2 == null || !f1.equals( f2 ) || f1.isVisible() != f2.isVisible() ) {
+          } else if ( f2 == null || !f1.equals( f2 ) || f1.isVisible() != f2.isVisible() || f1.isFixed() != f2.isFixed() ) {
             structureChanged = true;
             break;
           }

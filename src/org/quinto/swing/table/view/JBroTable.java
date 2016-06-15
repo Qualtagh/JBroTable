@@ -580,34 +580,40 @@ public class JBroTable extends JTable {
    * with fixed columns. This scroll pane may have a null viewport if a model contains no visible
    * fixed columns.
    * <p>To obtain a left fixed table, call {@link #getSlaveTable}.</p>
-   * @return a scroll pane with a fixed left part (if required)
+   * @return a scroll pane with a fixed left part (if required), or null if this table is just a fixed part
    */
   public JScrollPane getScrollPane() {
-    if ( scrollPane != null )
+    if ( scrollPane != null || getMasterTable() != null )
       return scrollPane;
     scrollPane = new JScrollPane( this );
-    if ( getMasterTable() == null ) {
-      updateScrollPane();
-      addPropertyChangeListener( new PropertyChangeListener() {
-        @Override
-        public void propertyChange( PropertyChangeEvent e ) {
-          JViewport viewport = scrollPane.getRowHeader();
-          if ( viewport == null )
-            return;
-          Component comp = viewport.getView();
-          if ( !( comp instanceof JBroTable ) )
-            return;
-          JBroTable fixed = ( JBroTable )comp;
-          String property = e.getPropertyName();
-          if ( "selectionModel".equals( property ) )
-            fixed.setSelectionModel( getSelectionModel() );
-          else if ( "rowSorter".equals( property ) )
-            fixed.setRowSorter( getRowSorter() );
-          else if ( "model".equals( property ) )
-            fixed.setModel( getModel() );
-        }
-      } );
-    }
+    updateScrollPane();
+    addPropertyChangeListener( new PropertyChangeListener() {
+      @Override
+      public void propertyChange( PropertyChangeEvent e ) {
+        JViewport viewport = scrollPane.getRowHeader();
+        if ( viewport == null )
+          return;
+        Component comp = viewport.getView();
+        if ( !( comp instanceof JBroTable ) )
+          return;
+        JBroTable fixed = ( JBroTable )comp;
+        String property = e.getPropertyName();
+        if ( "selectionModel".equals( property ) )
+          fixed.setSelectionModel( getSelectionModel() );
+        else if ( "rowSorter".equals( property ) )
+          fixed.setRowSorter( getRowSorter() );
+        else if ( "model".equals( property ) )
+          fixed.setModel( getModel() );
+        else if ( "showVerticalLines".equals( property ) )
+          fixed.setShowVerticalLines( getShowVerticalLines() );
+        else if ( "rowMargin".equals( property ) )
+          fixed.setRowMargin( getRowMargin() );
+        else if ( "rowHeight".equals( property ) )
+          fixed.setRowHeight( getRowHeight() );
+        else if ( "fillsViewportHeight".equals( property ) )
+          fixed.setFillsViewportHeight( getFillsViewportHeight() );
+      }
+    } );
     return scrollPane;
   }
 
@@ -640,6 +646,8 @@ public class JBroTable extends JTable {
    * @return fixed part for a main table, otherwise null
    */
   public JBroTable getSlaveTable() {
+    if ( getScrollPane() == null )
+      return null;
     JViewport viewport = getScrollPane().getRowHeader();
     if ( viewport == null )
       return null;
@@ -652,6 +660,14 @@ public class JBroTable extends JTable {
   @Override
   public boolean hasFocus() {
     return masterTable == null ? super.hasFocus() : masterTable.hasFocus();
+  }
+
+  @Override
+  public void setRowHeight( int row, int rowHeight ) {
+    super.setRowHeight( row, rowHeight );
+    JBroTable fixed = getSlaveTable();
+    if ( fixed != null )
+      fixed.setRowHeight( row, rowHeight );
   }
   
   private void updateScrollPane() {
@@ -683,6 +699,10 @@ public class JBroTable extends JTable {
       fixed.setAutoResizeMode( getAutoResizeMode() );
       fixed.setFocusable( false );
       fixed.setUpdateSelectionOnSort( false );
+      fixed.setFillsViewportHeight( getFillsViewportHeight() );
+      fixed.setRowHeight( getRowHeight() );
+      fixed.setRowMargin( getRowMargin() );
+      fixed.setShowVerticalLines( getShowVerticalLines() );
       fixed.setPreferredScrollableViewportSize( fixed.getPreferredSize() );
       
       MouseAdapter ma = new MouseAdapter() {

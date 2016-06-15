@@ -5,7 +5,6 @@ import java.awt.FlowLayout;
 import javax.swing.JFrame;
 import javax.swing.JScrollPane;
 import javax.swing.JTable;
-import javax.swing.JViewport;
 import javax.swing.UIManager;
 import org.quinto.swing.table.model.IModelFieldGroup;
 import org.quinto.swing.table.model.ModelData;
@@ -54,11 +53,9 @@ public class TutorialFixedColumns {
     scrollPane.setPreferredSize( new Dimension( 400, 300 ) );
     
     // Left fixed table.
-    JViewport viewport = scrollPane.getRowHeader();
-    if ( viewport != null ) {
-      JBroTable fixed = ( JBroTable )viewport.getView();
+    JBroTable fixed = table.getSlaveTable();
+    if ( fixed != null )
       fixed.setAutoResizeMode( JTable.AUTO_RESIZE_SUBSEQUENT_COLUMNS );
-    }
     
     JFrame frame = new JFrame( "Test" );
     frame.setDefaultCloseOperation( JFrame.EXIT_ON_CLOSE );

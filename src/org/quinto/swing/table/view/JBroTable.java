@@ -640,8 +640,6 @@ public class JBroTable extends JTable {
    * @return fixed part for a main table, otherwise null
    */
   public JBroTable getSlaveTable() {
-    if ( getScrollPane() == null )
-      return null;
     JViewport viewport = getScrollPane().getRowHeader();
     if ( viewport == null )
       return null;

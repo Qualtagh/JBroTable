@@ -579,13 +579,7 @@ public class JBroTable extends JTable {
    * This method creates (if it doesn't exist yet) and returns a scroll pane that contains a viewport
    * with fixed columns. This scroll pane may have a null viewport if a model contains no visible
    * fixed columns.
-   * <p>To obtain a left fixed table, use the following code:<br><br>
-   * <code>
-   * JViewport viewport = scrollPane.getRowHeader();<br>
-   * if ( viewport != null ) {<br>
-   * &nbsp;&nbsp;JBroTable fixed = ( JBroTable )viewport.getView();<br>
-   * }
-   * </code></p>
+   * <p>To obtain a left fixed table, call {@link #getSlaveTable}.</p>
    * @return a scroll pane with a fixed left part (if required)
    */
   public JScrollPane getScrollPane() {
@@ -633,8 +627,28 @@ public class JBroTable extends JTable {
     }
   }
 
-  protected JBroTable getMasterTable() {
+  /**
+   * If this table is just a fixed (non-scrollable) part then this method would return main part.
+   * @return main table for a fixed one, otherwise null
+   */
+  public JBroTable getMasterTable() {
     return masterTable;
+  }
+  
+  /**
+   * If this table has fixed columns then this method would return a fixed (non-scrollable) part.
+   * @return fixed part for a main table, otherwise null
+   */
+  public JBroTable getSlaveTable() {
+    if ( getScrollPane() == null )
+      return null;
+    JViewport viewport = getScrollPane().getRowHeader();
+    if ( viewport == null )
+      return null;
+    Component ret = viewport.getView();
+    if ( !( ret instanceof JBroTable ) )
+      return null;
+    return ( JBroTable )ret;
   }
 
   @Override

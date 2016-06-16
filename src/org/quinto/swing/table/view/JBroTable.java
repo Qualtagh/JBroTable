@@ -1,11 +1,7 @@
 package org.quinto.swing.table.view;
 
 import java.awt.Component;
-import java.awt.Dimension;
-import java.awt.Font;
-import java.awt.FontMetrics;
 import java.awt.Rectangle;
-import java.awt.Toolkit;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.beans.PropertyChangeEvent;
@@ -23,9 +19,7 @@ import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
 import javax.swing.event.ListSelectionEvent;
 import javax.swing.event.TableColumnModelEvent;
-import javax.swing.event.TableColumnModelListener;
 import javax.swing.event.TableModelEvent;
-import javax.swing.plaf.TableHeaderUI;
 import javax.swing.plaf.TableUI;
 import javax.swing.table.JTableHeader;
 import javax.swing.table.TableColumn;
@@ -39,12 +33,9 @@ import org.quinto.swing.table.model.Utils;
 
 public class JBroTable extends JTable {
   private static final Logger LOGGER = Logger.getLogger( JBroTable.class );
-  private static final Pattern BR_PATTERN = Pattern.compile( "<br>|<br/>", Pattern.CASE_INSENSITIVE );
-  private static final Pattern TAG_PATTERN = Pattern.compile( "<[^<>]++>" );
-  private Integer headerHeight;
-  private HeaderHeightWatcher headerHeightWatcher;
   private Integer currentLevel;
   private JScrollPane scrollPane;
+  private boolean scrollPaneFixed;
   /**
    * This field points to a main table for a fixed table
    * (fixed table is just a non-scrollable part of the main table).
@@ -86,34 +77,6 @@ public class JBroTable extends JTable {
     return ( JBroTableUI )super.getUI();
   }
 
-  /**
-   * Set the whole header height.
-   * @param headerHeight the whole header height, {@code null} means to let Swing determine it
-   * @deprecated use {@link JBroTableHeader#setRowHeight( int, java.lang.Integer )} instead
-   */
-  @Deprecated
-  public void setHeaderHeight( Integer headerHeight ) {
-    if ( headerHeight == null ) {
-      if ( headerHeightWatcher != null ) {
-        getColumnModel().removeColumnModelListener( headerHeightWatcher );
-      }
-    } else if ( this.headerHeight == null ) {
-      getColumnModel().addColumnModelListener( headerHeightWatcher = new HeaderHeightWatcher() );
-    }
-    this.headerHeight = headerHeight;
-    updateHeaderSize();
-  }
-
-  /**
-   * Get the whole header height.
-   * @return the whole header height. Zero value may mean that the height is determined by Swing
-   * @deprecated use {@link JBroTableHeader#getRowHeight( int )} instead
-   */
-  @Deprecated
-  public int getHeaderHeight() {
-    return headerHeight == null ? 0 : headerHeight;
-  }
-
   private void refresh() {
     revalidate();
     repaint( getVisibleRect() );
@@ -126,47 +89,6 @@ public class JBroTable extends JTable {
 
   public ModelData getData() {
     return getModel().getData();
-  }
-
-  public void updateHeaderSize() {
-    if ( headerHeight == null || headerHeight < 0 ) {
-      return;
-    }
-    JTableHeader header = getTableHeader();
-    int h = headerHeight;
-    TableColumnModel cmodel = getColumnModel();
-    Font font = header.getFont();
-    FontMetrics fm = Toolkit.getDefaultToolkit().getFontMetrics( font );
-    for ( int c = 0; c < cmodel.getColumnCount(); c++ ) {
-      TableColumn column = cmodel.getColumn( c );
-      String text = String.valueOf( column.getHeaderValue() );
-      if ( text != null && text.length() >= 6 && text.charAt( 0 ) == '<' && text.substring( 0, 6 ).equalsIgnoreCase( "<html>" ) ) {
-        text = BR_PATTERN.matcher( text ).replaceAll( "\n" );
-        text = TAG_PATTERN.matcher( text ).replaceAll( "" );
-      }
-      text = Utils.getTextWithWordWraps( text, fm, column.getWidth() - 8 );
-      int newLines = 0;
-      if ( text != null ) {
-        char chars[] = text.toCharArray();
-        for ( char ch : chars )
-          if ( ch == '\n' )
-            newLines++;
-      }
-      int height = ( newLines + 1 ) * fm.getHeight() + 6;
-      if ( height > h )
-        h = height;
-    }
-    TableHeaderUI ui = header.getUI();
-    if ( ui instanceof JBroTableHeaderUI ) {
-      JBroTableHeaderUI gui = ( JBroTableHeaderUI )ui;
-      Dimension d = gui.getPreferredSize( header );
-      if ( h > d.height ) {
-        int levels = gui.getHeader().getLevelsQuantity();
-        int lastRowHeight = gui.getRowHeight( levels - 1 );
-        gui.setRowHeight( levels - 1, lastRowHeight + h - d.height );
-      }
-    }
-    header.setPreferredSize( new Dimension( cmodel.getTotalColumnWidth(), h ) );
   }
   
   private void checkFieldWidths() {
@@ -239,11 +161,10 @@ public class JBroTable extends JTable {
     }
     // New order of visible columns
     LinkedHashSet< Integer > inew = new LinkedHashSet< Integer >( modelFields.length );
-    for ( int i = 0; i < newFields.length; i++ ) {
-      if ( newFields[ i ] == null ) {
+    for ( String fieldName : newFields ) {
+      if ( fieldName == null )
         continue;
-      }
-      Integer pos = modelPositions.get( newFields[ i ] );
+      Integer pos = modelPositions.get( fieldName );
       // Fields list doesn't correspond to current data array
       if ( pos == null ) {
         LOGGER.warn( "reorderFields called on obsolete data model. Call setData first." );
@@ -684,13 +605,15 @@ public class JBroTable extends JTable {
       }
     }
     if ( !hasFixed ) {
-      if ( scrollPane.getRowHeader() != null ) {
+      if ( scrollPaneFixed && scrollPane.getRowHeader() != null ) {
         scrollPane.setCorner( JScrollPane.UPPER_LEFT_CORNER, null );
         scrollPane.setRowHeader( null );
+        scrollPaneFixed = false;
       }
       return;
     }
     if ( scrollPane.getRowHeader() == null ) {
+      scrollPaneFixed = true;
       JBroTable fixed = newInstance();
       fixed.masterTable = this;
       fixed.setModel( getModel() );
@@ -764,31 +687,5 @@ public class JBroTable extends JTable {
    */
   protected JBroTable newInstance() {
     return new JBroTable();
-  }
-  
-  private class HeaderHeightWatcher implements TableColumnModelListener {
-    @Override
-    public void columnAdded( TableColumnModelEvent evt ) {
-      updateHeaderSize();
-    }
-
-    @Override
-    public void columnRemoved( TableColumnModelEvent evt ) {
-      updateHeaderSize();
-    }
-
-    @Override
-    public void columnMoved( TableColumnModelEvent evt ) {
-      updateHeaderSize();
-    }
-
-    @Override
-    public void columnMarginChanged( ChangeEvent evt ) {
-      updateHeaderSize();
-    }
-
-    @Override
-    public void columnSelectionChanged( ListSelectionEvent evt ) {
-    }
   }
 }

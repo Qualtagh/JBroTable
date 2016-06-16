@@ -3,13 +3,12 @@ package org.quinto.swing.table.view;
 import com.sun.java.swing.plaf.windows.WindowsLookAndFeel;
 import java.awt.FlowLayout;
 import javax.swing.JFrame;
-import javax.swing.JScrollPane;
 import javax.swing.UIManager;
+import org.quinto.swing.table.model.IModelFieldGroup;
 import org.quinto.swing.table.model.ModelData;
 import org.quinto.swing.table.model.ModelField;
 import org.quinto.swing.table.model.ModelFieldGroup;
 import org.quinto.swing.table.model.ModelRow;
-import org.quinto.swing.table.model.IModelFieldGroup;
 import org.quinto.swing.table.model.ModelSpan;
 
 public class JBroTableUIShowcase {
@@ -47,7 +46,7 @@ public class JBroTableUIShowcase {
     JFrame frame = new JFrame( "Testing" );
     frame.setDefaultCloseOperation( JFrame.EXIT_ON_CLOSE );
     frame.setLayout( new FlowLayout() );
-    frame.add( new JScrollPane( table ) );
+    frame.add( table.getScrollPane() );
     frame.pack();
     frame.setLocationRelativeTo( null );
     frame.setVisible( true );

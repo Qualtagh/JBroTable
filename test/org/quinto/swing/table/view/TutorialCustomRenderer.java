@@ -9,7 +9,6 @@ import java.awt.GridLayout;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
-import javax.swing.JScrollPane;
 import javax.swing.SwingConstants;
 import javax.swing.UIManager;
 import org.quinto.swing.table.model.IModelFieldGroup;
@@ -79,7 +78,7 @@ public class TutorialCustomRenderer {
     JFrame frame = new JFrame( "Test" );
     frame.setDefaultCloseOperation( JFrame.EXIT_ON_CLOSE );
     frame.setLayout( new FlowLayout() );
-    frame.add( new JScrollPane( table ) );
+    frame.add( table.getScrollPane() );
     frame.pack();
     frame.setLocationRelativeTo( null );
     frame.setVisible( true );

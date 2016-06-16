@@ -184,7 +184,7 @@ public class JBroTableColumnModelShowcase {
     frame = new JFrame( "Testing" );
     frame.setDefaultCloseOperation( JFrame.EXIT_ON_CLOSE );
     frame.setLayout( new FlowLayout() );
-    frame.add( new JScrollPane( table ) );
+    frame.add( table.getScrollPane() );
     JButton button = new JButton( "click" );
     button.addActionListener( lafChanger );
     frame.add( button );

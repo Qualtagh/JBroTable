@@ -2,7 +2,6 @@ package org.quinto.swing.table.view;
 
 import com.sun.java.swing.plaf.windows.WindowsLookAndFeel;
 import java.awt.FlowLayout;
-import org.quinto.swing.table.model.*;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
@@ -17,10 +16,17 @@ import javax.swing.table.TableColumn;
 import org.apache.log4j.Logger;
 import org.junit.After;
 import org.junit.AfterClass;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
-import static org.junit.Assert.*;
+import org.quinto.swing.table.model.IModelFieldGroup;
+import org.quinto.swing.table.model.ModelData;
+import org.quinto.swing.table.model.ModelField;
+import org.quinto.swing.table.model.ModelFieldGroup;
+import org.quinto.swing.table.model.ModelRow;
+import org.quinto.swing.table.model.Utils;
 
 public class JBroTableColumnModelTest {
   private static final Logger LOGGER = Logger.getLogger( JBroTableColumnModelTest.class );
@@ -141,7 +147,7 @@ public class JBroTableColumnModelTest {
     assertEquals( 50, ( ( JBroTableHeader )table.getTableHeader() ).getRowHeight( 2 ) );
     
     ( ( JBroTableHeader )table.getTableHeader() ).setRowHeight( 2, null );
-    table.setHeaderHeight( 200 );
+    table.getTableHeader().setRowHeight( 2, 100 );
     assertEquals( 50, ( ( JBroTableHeader )table.getTableHeader() ).getRowHeight( 0 ) );
     assertEquals( 50, ( ( JBroTableHeader )table.getTableHeader() ).getRowHeight( 1 ) );
     assertEquals( 100, ( ( JBroTableHeader )table.getTableHeader() ).getRowHeight( 2 ) );
@@ -149,14 +155,14 @@ public class JBroTableColumnModelTest {
     ( ( JBroTableHeader )table.getTableHeader() ).setRowHeight( 2, 50 );
     assertEquals( 50, ( ( JBroTableHeader )table.getTableHeader() ).getRowHeight( 0 ) );
     assertEquals( 50, ( ( JBroTableHeader )table.getTableHeader() ).getRowHeight( 1 ) );
-    assertEquals( 100, ( ( JBroTableHeader )table.getTableHeader() ).getRowHeight( 2 ) );
+    assertEquals( 50, ( ( JBroTableHeader )table.getTableHeader() ).getRowHeight( 2 ) );
   }
   
   @Test( timeout = 1000L )
   public void getRowHeightLastNotSet() {
     ( ( JBroTableHeader )table.getTableHeader() ).setRowHeight( 0, 50 );
     ( ( JBroTableHeader )table.getTableHeader() ).setRowHeight( 1, 50 );
-    table.setHeaderHeight( 200 );
+    table.getTableHeader().setRowHeight( 2, 100 );
     assertEquals( 50, ( ( JBroTableHeader )table.getTableHeader() ).getRowHeight( 0 ) );
     assertEquals( 50, ( ( JBroTableHeader )table.getTableHeader() ).getRowHeight( 1 ) );
     assertEquals( 100, ( ( JBroTableHeader )table.getTableHeader() ).getRowHeight( 2 ) );
@@ -164,7 +170,7 @@ public class JBroTableColumnModelTest {
     ( ( JBroTableHeader )table.getTableHeader() ).setRowHeight( 2, 50 );
     assertEquals( 50, ( ( JBroTableHeader )table.getTableHeader() ).getRowHeight( 0 ) );
     assertEquals( 50, ( ( JBroTableHeader )table.getTableHeader() ).getRowHeight( 1 ) );
-    assertEquals( 100, ( ( JBroTableHeader )table.getTableHeader() ).getRowHeight( 2 ) );
+    assertEquals( 50, ( ( JBroTableHeader )table.getTableHeader() ).getRowHeight( 2 ) );
   }
   
   @Test( timeout = 1000L )
@@ -490,7 +496,7 @@ public class JBroTableColumnModelTest {
     JFrame frame = new JFrame( "Testing" );
     frame.setDefaultCloseOperation( JFrame.EXIT_ON_CLOSE );
     frame.setLayout( new FlowLayout() );
-    frame.add( new JScrollPane( test.table ) );
+    frame.add( test.table.getScrollPane() );
     JTable tab = new JTable( new Object[][]{ { 1, 2, 3 },
                                              { 4, 5, 6 },
                                              { 7, 8, 9 } }, new String[]{ "a", "b", "c" } );

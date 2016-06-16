@@ -65,39 +65,6 @@ public class Utils {
       LOGGER.error( null, e );
     }
   }
-  
-  public static String getTextWithWordWraps( String text, FontMetrics fm, int maxWidth ) {
-    if ( text == null || fm == null || text.length() == 0 || text.indexOf( ' ' ) < 0 )
-      return text;
-    String words[] = text.split( " " );
-    int widths[] = new int[ words.length ];
-    for ( int a = 0; a < words.length; a++ ) {
-      widths[ a ] = fm.stringWidth( words[ a ] );
-      if ( widths[ a ] > maxWidth )
-        maxWidth = widths[ a ] + 1;
-    }
-    StringBuilder result = new StringBuilder();
-    int idx = 0;
-    while ( idx < words.length ) {
-      int w = 0;
-      for ( int a = idx; a < words.length; a++ ) {
-        w += widths[ a ];
-        if ( w > maxWidth ) {
-          idx = a;
-          break;
-        } else {
-          if ( a != idx )
-            result.append( ' ' );
-          result.append( words[ a ] );
-          if ( a == words.length - 1 )
-            idx = words.length;
-        }
-      }
-      if ( idx < words.length )
-        result.append( '\n' );
-    }
-    return result.toString();
-  }
 
   public static void updateComponentTreeUI() {
     for ( Window window : Window.getWindows() )

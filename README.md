@@ -64,7 +64,6 @@ package org.quinto.swing.table.view;
 
 import java.awt.FlowLayout;
 import javax.swing.JFrame;
-import javax.swing.JScrollPane;
 import javax.swing.UIManager;
 import org.quinto.swing.table.model.IModelFieldGroup;
 import org.quinto.swing.table.model.ModelData;
@@ -117,7 +116,7 @@ public class Sample {
     JFrame frame = new JFrame( "Test" );
     frame.setDefaultCloseOperation( JFrame.EXIT_ON_CLOSE );
     frame.setLayout( new FlowLayout() );
-    frame.add( new JScrollPane( table ) );
+    frame.add( table.getScrollPane() );
     frame.pack();
     frame.setLocationRelativeTo( null );
     frame.setVisible( true );

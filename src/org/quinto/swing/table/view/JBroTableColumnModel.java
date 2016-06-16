@@ -1,11 +1,13 @@
 package org.quinto.swing.table.view;
 
+import java.util.ArrayDeque;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
+import java.util.Deque;
 import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -14,10 +16,10 @@ import javax.swing.event.TableColumnModelListener;
 import javax.swing.table.DefaultTableColumnModel;
 import javax.swing.table.TableColumn;
 import javax.swing.table.TableColumnModel;
+import org.quinto.swing.table.model.IModelFieldGroup;
 import org.quinto.swing.table.model.ModelData;
 import org.quinto.swing.table.model.ModelField;
 import org.quinto.swing.table.model.ModelFieldGroup;
-import org.quinto.swing.table.model.IModelFieldGroup;
 
 public class JBroTableColumnModel extends DefaultTableColumnModel {
   private final List< List< JBroTableColumn > > columns = new ArrayList< List< JBroTableColumn > >();
@@ -127,8 +129,8 @@ public class JBroTableColumnModel extends DefaultTableColumnModel {
     return getTableColumn( parent );
   }
 
-  public List< JBroTableColumn > getColumnParents( JBroTableColumn column, boolean includeThis ) {
-    LinkedList< JBroTableColumn > ret = new LinkedList< JBroTableColumn >();
+  public Collection< JBroTableColumn > getColumnParents( JBroTableColumn column, boolean includeThis ) {
+    Deque< JBroTableColumn > ret = new ArrayDeque< JBroTableColumn >();
     JBroTableColumn col = includeThis ? column : column == null ? null : getColumnParent( column );
     while ( col != null ) {
       ret.addFirst( col );

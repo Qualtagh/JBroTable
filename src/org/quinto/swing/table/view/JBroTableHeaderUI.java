@@ -177,6 +177,10 @@ public class JBroTableHeaderUI extends BasicTableHeaderUI {
       call( "rolloverColumnUpdated", new Class[]{ int.class, int.class }, delegate, new Object[]{ oldColumn, newColumn } );
     super.rolloverColumnUpdated( oldColumn, newColumn );
   }
+  
+  private void rolloverColumnUpdated( int oldColumn, int newColumn, int level ) {
+    call( "rolloverColumnUpdated", new Class[]{ int.class, int.class }, delegates.get( level ), new Object[]{ oldColumn, newColumn } );
+  }
 
   @Override
   protected void uninstallKeyboardActions() {
@@ -317,6 +321,7 @@ public class JBroTableHeaderUI extends BasicTableHeaderUI {
     Rectangle clip = g.getClipBounds();
     Point left = clip.getLocation();
     Point right = new Point( clip.x + clip.width - 1, clip.y );
+    int rMin = getRowAtPoint( left );
     int cMin = header.columnAtPoint( left );
     int cMax = header.columnAtPoint( right );
     int columnCount = groupModel.getColumnCount();
@@ -328,7 +333,7 @@ public class JBroTableHeaderUI extends BasicTableHeaderUI {
     if ( cMin < 0 )
       cMin = 0;
     JBroTableHeader header = getHeader();
-    int headerHeight = header.getSize().height;
+    int headerHeight = header.getHeight();
     Rectangle cellRect = new Rectangle();
     JBroTableColumn draggedColumn = header.getDraggedGroup();
     List< JBroTableColumn > currentColumns = new ArrayList< JBroTableColumn >();
@@ -376,7 +381,7 @@ public class JBroTableHeaderUI extends BasicTableHeaderUI {
             g.fillRect( cellRect.x, cellRect.y, cellRect.width, headerHeight - cellRect.y );
             draggedColumnMet = true;
             doNotPaintCells = true;
-          } else if ( !doNotPaintCells )
+          } else if ( !doNotPaintCells && ( columnParent.getY() >= rMin || level >= rMin ) )
             paintCell( g, cellRect, columnParent );
           if ( columnParent != column ) {
             cellRect.y += cellRect.height;
@@ -414,12 +419,12 @@ public class JBroTableHeaderUI extends BasicTableHeaderUI {
    * @param cellRect a space where the component should be painted
    */
   public static void htmlHack( Graphics g, Component component, Rectangle cellRect ) {
-    if ( component.getParent() == null )
-      return;
     component.setBounds( cellRect );
     Graphics gg = g.create( -cellRect.width, -cellRect.height, cellRect.width, cellRect.height );
     try {
       component.paint( gg );
+    } catch ( NullPointerException e ) {
+      // Thrown on applet reinitialization.
     } finally {
       gg.dispose();
     }
@@ -481,8 +486,12 @@ public class JBroTableHeaderUI extends BasicTableHeaderUI {
   }
 
   public int getGroupHeight( JBroTableColumn group ) {
+    if ( group == null )
+      return 0;
     int height = 0;
-    for ( int level = group.getY(); level < group.getY() + group.getRowspan(); level++ )
+    int from = group.getY();
+    int to = from + group.getRowspan();
+    for ( int level = from; level < to; level++ )
       height += getRowHeight( level );
     return height;
   }
@@ -492,7 +501,7 @@ public class JBroTableHeaderUI extends BasicTableHeaderUI {
     JBroTableColumnModel groupModel = getTableColumnModel();
     List< JBroTableColumn > children = groupModel.getColumnChildren( group );
     if ( children.isEmpty() )
-      width = group.getWidth();
+      width = group == null ? 0 : group.getWidth();
     else
       for ( JBroTableColumn column : children )
         width += groupModel.getWidth( column );
@@ -551,16 +560,48 @@ public class JBroTableHeaderUI extends BasicTableHeaderUI {
     if ( selectedColumn != newSelectedColumn ) {
       JBroTableColumn oldSelectedColumn = selectedColumn;
       selectedColumn = newSelectedColumn;
-      if ( oldSelectedColumn != null ) {
-        Rectangle repaintRect = getGroupHeaderBoundsFor( oldSelectedColumn );
-        header.repaint( repaintRect );
-      }
+      Rectangle repaintRect = null;
+      if ( oldSelectedColumn != null )
+        repaintRect = getGroupHeaderBoundsFor( oldSelectedColumn );
       if ( newSelectedColumn != null ) {
-        Rectangle repaintRect = getGroupHeaderBoundsFor( newSelectedColumn );
-        header.repaint( repaintRect );
+        Rectangle rect = getGroupHeaderBoundsFor( newSelectedColumn );
+        if ( repaintRect == null )
+          repaintRect = rect;
+        else if ( rect != null && repaintRect.intersects( rect ) )
+          repaintRect = repaintRect.union( rect );
+        else
+          header.repaint( rect );
       }
+      if ( repaintRect != null )
+        header.repaint( repaintRect );
       JBroTableColumnModel columnModel = getTableColumnModel();
-      rolloverColumnUpdated( columnModel.getColumnAbsoluteIndex( oldSelectedColumn ), columnModel.getColumnAbsoluteIndex( newSelectedColumn ) );
+      int oldAbs = columnModel.getColumnAbsoluteIndex( oldSelectedColumn );
+      int newAbs = columnModel.getColumnAbsoluteIndex( newSelectedColumn );
+      int level;
+      if ( oldSelectedColumn == null ) {
+        if ( newSelectedColumn == null )
+          level = -1;
+        else
+          level = newSelectedColumn.getY();
+      } else if ( newSelectedColumn == null )
+        level = oldSelectedColumn.getY();
+      else {
+        int oldY = oldSelectedColumn.getY();
+        int oldYR = oldY + oldSelectedColumn.getRowspan() - 1;
+        int newY = newSelectedColumn.getY();
+        int newYR = newY + newSelectedColumn.getRowspan() - 1;
+        if ( oldY <= newY && newY <= oldYR )
+          level = newY;
+        else if ( newY <= oldY && oldY <= newYR )
+          level = oldY;
+        else {
+          level = newY;
+          rolloverColumnUpdated( oldAbs, newAbs, oldY );
+        }
+      }
+      if ( level >= 0 )
+        rolloverColumnUpdated( oldAbs, newAbs, level );
+      super.rolloverColumnUpdated( oldAbs, newAbs );
       if ( oldSelectedColumn != null && newSelectedColumn != null && oldSelectedColumn.getY() != newSelectedColumn.getY() ) {
         BasicTableHeaderUI parentUI = getParentUI( getRenderer( oldSelectedColumn ) );
         setField( "rolloverColumn", -1, parentUI );
@@ -649,8 +690,7 @@ public class JBroTableHeaderUI extends BasicTableHeaderUI {
     Container container;
     JTable table;
     if ( th.getParent() == null
-         || ( container = th.getParent().getParent() ) == null
-         || !( container instanceof JScrollPane )
+         || !( ( container = th.getParent().getParent() ) instanceof JScrollPane )
          || ( table = th.getTable() ) == null )
       return 0;
     if ( !container.getComponentOrientation().isLeftToRight() && !th.getComponentOrientation().isLeftToRight() ) {
@@ -689,20 +729,29 @@ public class JBroTableHeaderUI extends BasicTableHeaderUI {
   }
 
   public Rectangle getGroupHeaderBoundsFor( JBroTableColumn group ) {
-    if ( group == null )
-      return new Rectangle();
+    return new Rectangle( getGroupX( group ), getGroupY( group ), getGroupWidth( group ), getGroupHeight( group ) );
+  }
+  
+  public Point getGroupLocation( JBroTableColumn group ) {
+    return new Point( getGroupX( group ), getGroupY( group ) );
+  }
+  
+  public int getGroupY( JBroTableColumn group ) {
+    int y = 0;
+    for ( int level = group == null ? -1 : group.getY() - 1; level >= 0; level-- )
+      y += getRowHeight( level );
+    return y;
+  }
+  
+  public int getGroupX( JBroTableColumn group ) {
     JBroTableColumnModel columnModel = getTableColumnModel();
-    Dimension size = getGroupSize( group );
-    Rectangle bounds = new Rectangle( size );
-    bounds.y = 0;
-    for ( JBroTableColumn parent : columnModel.getColumnParents( group, false ) )
-      bounds.y += getGroupHeight( parent );
-    int lastColumnIndex = columnModel.getColumnIndex( group.getIdentifier() );
+    int x = 0;
+    int lastColumnIndex = group == null ? -1 : columnModel.getColumnIndex( group.getIdentifier() );
     for ( int index = 0; index < lastColumnIndex; index++ ) {
       JBroTableColumn tc = columnModel.getColumn( index );
-      bounds.x += tc.getWidth();
+      x += tc.getWidth();
     }
-    return bounds;
+    return x;
   }
   
   public int getRowAtPoint( Point point ) {
@@ -722,6 +771,7 @@ public class JBroTableHeaderUI extends BasicTableHeaderUI {
 
   public class MouseInputHandler implements MouseInputListener {
     private int mouseXOffset;
+    private int prevMouseX;
     private Cursor otherCursor = RESIZE_CURSOR;
 
     @Override
@@ -801,6 +851,7 @@ public class JBroTableHeaderUI extends BasicTableHeaderUI {
         if ( column != null ) {
           header.setDraggedColumn( column );
           mouseXOffset = point.x;
+          prevMouseX = mouseXOffset;
           selectColumn( null );
         }
       }
@@ -839,6 +890,9 @@ public class JBroTableHeaderUI extends BasicTableHeaderUI {
         boolean calcNewPosition = true;
         int draggedDistance = mouseX - mouseXOffset;
         boolean moved = false;
+        int minCol = Integer.MAX_VALUE;
+        int maxCol = Integer.MIN_VALUE;
+        JBroTableColumn parent = null;
         while ( calcNewPosition ) {
           int startIndex = groupModel.getColumnAbsoluteIndex( draggedColumn );
           int endIndex = startIndex + draggedColumn.getColspan() - 1;
@@ -860,7 +914,7 @@ public class JBroTableHeaderUI extends BasicTableHeaderUI {
             }
           }
           if ( shouldMove ) {
-            JBroTableColumn parent = groupModel.getColumnParent( draggedColumn );
+            parent = groupModel.getColumnParent( draggedColumn );
             if ( parent != null ) {
               int parentStartIndex = groupModel.getColumnAbsoluteIndex( parent );
               int parentEndIndex = parentStartIndex + parent.getColspan() - 1;
@@ -902,9 +956,67 @@ public class JBroTableHeaderUI extends BasicTableHeaderUI {
             draggedDistance = 0;
             calcNewPosition = false;
           }
+          if ( minCol > startIndex )
+            minCol = startIndex;
+          if ( minCol > newColumnIndex )
+            minCol = newColumnIndex;
+          if ( maxCol < startIndex )
+            maxCol = startIndex;
+          if ( maxCol < newColumnIndex )
+            maxCol = newColumnIndex;
         }
         header.setDraggedDistance( draggedDistance );
-        repaintHeaderAndTable();
+        int y = getGroupY( draggedColumn );
+        int diff = prevMouseX - mouseX;
+        int addition = table.getShowVerticalLines() ? 1 : 0;
+        int draggedWidth = getGroupWidth( draggedColumn ) + Math.abs( diff ) + addition;
+        int draggedX = getGroupX( draggedColumn ) + draggedDistance + Math.min( 0, diff ) - addition;
+        int x;
+        int width;
+        if ( moved ) {
+          if ( maxCol >= 0 ) {
+            maxCol += draggedColumn.getColspan() - 1;
+            if ( maxCol >= groupModel.getColumnCount() ) {
+              maxCol = groupModel.getColumnCount() - 1;
+              if ( minCol > maxCol )
+                minCol = maxCol;
+            }
+          } else {
+            minCol = 0;
+            maxCol = groupModel.getColumnCount() - 1;
+          }
+          x = 0;
+          for ( int i = 0; i < minCol; i++ )
+            x += groupModel.getColumn( i ).getWidth();
+          width = 0;
+          for ( int i = minCol; i <= maxCol; i++ )
+            width += groupModel.getColumn( i ).getWidth();
+          int end = x + width;
+          if ( x > draggedX )
+            x = draggedX;
+          int draggedEnd = draggedX + draggedWidth;
+          if ( end < draggedEnd )
+            end = draggedEnd;
+          width = end - x;
+        } else {
+          x = draggedX;
+          width = draggedWidth;
+        }
+        if ( parent != null ) {
+          int px = getGroupX( parent );
+          int pw = getGroupWidth( parent );
+          int pend = px + pw;
+          if ( x < px ) {
+            width -= px - x;
+            x = px;
+          }
+          int end = x + width;
+          if ( end > pend )
+            width -= end - pend;
+        }
+        if ( width > 0 )
+          header.repaintHeaderAndTable( x, y, width );
+        prevMouseX = mouseX;
       } else if ( resizingColumn != null ) {
         // TODO: child column resizing should affect only columns inside a parent group.
         // TODO: parent column resizing should proportionally affect all child columns.
@@ -916,24 +1028,6 @@ public class JBroTableHeaderUI extends BasicTableHeaderUI {
           newWidth = mouseXOffset - mouseX;
         mouseXOffset += changeColumnWidth( resizingColumn, header, oldWidth, newWidth );
       }
-      updateRolloverColumn( e );
-    }
-    
-    private void repaintHeaderAndTable() {
-      Container c = table;
-      while ( c != null ) {
-        if ( SwingUtilities.isDescendingFrom( header, c ) )
-          break;
-        c = c.getParent();
-      }
-      if ( c == null ) {
-        header.repaint();
-        table.repaint();
-      } else {
-        Rectangle r = SwingUtilities.convertRectangle( header, header.getVisibleRect(), c );
-        r = r.union( SwingUtilities.convertRectangle( table, table.getVisibleRect(), c ) );
-        c.repaint( r.x, r.y, r.width, r.height );
-      }
     }
 
     @Override
@@ -941,11 +1035,23 @@ public class JBroTableHeaderUI extends BasicTableHeaderUI {
       JBroTableHeader header = getHeader();
       if ( !header.isEnabled() )
         return;
+      JBroTableColumn draggedColumn = header.getDraggedGroup();
+      int y = getGroupY( draggedColumn );
+      int addition = table.getShowVerticalLines() ? 1 : 0;
+      int draggedDistance = header.getDraggedDistance();
+      int draggedWidth = getGroupWidth( draggedColumn ) + addition;
+      int draggedX = getGroupX( draggedColumn ) - addition;
       header.setDraggedDistance( 0 );
       header.setResizingColumn( null );
       header.setDraggedColumn( null );
       updateRolloverColumn( e );
-      repaintHeaderAndTable();
+      if ( draggedDistance > draggedWidth || draggedDistance < -draggedWidth ) {
+        header.repaintHeaderAndTable( draggedX + draggedDistance, y, draggedWidth );
+        header.repaintHeaderAndTable( draggedX, y, draggedWidth );
+      } else if ( draggedDistance < 0 )
+        header.repaintHeaderAndTable( draggedX + draggedDistance, y, draggedWidth - draggedDistance );
+      else
+        header.repaintHeaderAndTable( draggedX, y, draggedWidth + draggedDistance );
     }
 
     @Override

@@ -3,18 +3,15 @@ package org.quinto.swing.table.view;
 import java.awt.Dimension;
 import java.awt.FlowLayout;
 import javax.swing.JFrame;
+import javax.swing.JScrollPane;
 import javax.swing.JTable;
 import javax.swing.UIManager;
 import org.quinto.swing.table.model.IModelFieldGroup;
-import org.quinto.swing.table.model.ModelData;
 import org.quinto.swing.table.model.ModelField;
 import org.quinto.swing.table.model.ModelFieldGroup;
-import org.quinto.swing.table.model.ModelRow;
-import org.quinto.swing.table.model.Utils;
 
-public class BigSample {
+public class BigSampleJTable {
   public static void main( String args[] ) throws Exception {
-    Utils.initSimpleConsoleLogger();
     UIManager.setLookAndFeel( UIManager.getSystemLookAndFeelClassName() );
     
     // Hierarchically create columns and column groups.
@@ -51,27 +48,28 @@ public class BigSample {
                       .withChild( new ModelField( "M0", "<html>M0" ) )
                       .withChild( new ModelField( "N0", "<html>N0" ) ) )
     };
-    ModelData data = new ModelData( groups );
     ModelField fields[] = ModelFieldGroup.getBottomFields( groups );
+    String columns[] = new String[ fields.length ];
+    for ( int i = 0; i < fields.length; i++ )
+      columns[ i ] = fields[ i ].getCaption();
     
     // Sample data.
-    ModelRow rows[] = new ModelRow[ 10000 ];
-    for ( int i = 0; i < rows.length; i++ ) {
-      rows[ i ] = new ModelRow( fields.length );
+    Object rows[][] = new Object[ 10000 ][ fields.length ];
+    for ( int i = 0; i < rows.length; i++ )
       for ( int j = 0; j < fields.length; j++ )
-        rows[ i ].setValue( j, i == j ? "sort me" : fields[ j ].getCaption() + i );
-    }
-    data.setRows( rows );
-    JBroTable table = new JBroTable( data );
+        rows[ i ][ j ] = i == j ? "sort me" : fields[ j ].getCaption() + i;
+    JTable table = new JTable( rows, columns );
+    table.getTableHeader().setReorderingAllowed( true );
     table.setAutoCreateRowSorter( true );
     table.setAutoResizeMode( JTable.AUTO_RESIZE_OFF );
-    table.getScrollPane().setPreferredSize( new Dimension( 1024, 768 ) );
+    JScrollPane scrollPane = new JScrollPane( table );
+    scrollPane.setPreferredSize( new Dimension( 1024, 768 ) );
     
     // Window.
     JFrame frame = new JFrame( "Test" );
     frame.setDefaultCloseOperation( JFrame.EXIT_ON_CLOSE );
     frame.setLayout( new FlowLayout() );
-    frame.add( table.getScrollPane() );
+    frame.add( scrollPane );
     frame.pack();
     frame.setLocationRelativeTo( null );
     frame.setVisible( true );

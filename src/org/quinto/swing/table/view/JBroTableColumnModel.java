@@ -1,5 +1,6 @@
 package org.quinto.swing.table.view;
 
+import java.beans.PropertyChangeEvent;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -11,6 +12,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import javax.swing.JTable;
 import javax.swing.ListSelectionModel;
 import javax.swing.event.TableColumnModelListener;
 import javax.swing.table.DefaultTableColumnModel;
@@ -41,6 +43,27 @@ public class JBroTableColumnModel extends DefaultTableColumnModel {
     delegates.clear();
     while ( getColumnCount() > 0 )
       super.removeColumn( getColumn( 0 ) );
+  }
+  
+  @Override
+  public void propertyChange( PropertyChangeEvent e ) {
+    String name = e.getPropertyName();
+    if ( "width".equals( name ) && table.getAutoResizeMode() != JTable.AUTO_RESIZE_ALL_COLUMNS && e.getSource() instanceof JBroTableColumn && e.getNewValue() instanceof Integer && e.getOldValue() instanceof Integer ) {
+      if ( totalColumnWidth >= 0 )
+        totalColumnWidth += ( Integer )e.getNewValue() - ( Integer )e.getOldValue();
+      JBroTableColumn column = ( JBroTableColumn )e.getSource();
+      Enumeration< TableColumn > cols = getColumns();
+      int x = 0;
+      while ( cols.hasMoreElements() ) {
+        TableColumn col = cols.nextElement();
+        if ( col == column )
+          break;
+        x += col.getWidth();
+      }
+      JBroTableHeader header = table.getTableHeader();
+      header.repaintHeaderAndTable( x, 0, header.getWidth() - x );
+    } else
+      super.propertyChange( e );
   }
 
   public JBroTableColumn addColumn( IModelFieldGroup group, int x, int y ) {

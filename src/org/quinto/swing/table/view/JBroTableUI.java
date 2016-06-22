@@ -494,9 +494,10 @@ public class JBroTableUI extends BasicTableUI {
     }
     gg.setColor( header != null ? header.getBackground() : isSelected ? table.getSelectionBackground() : table.getBackground() );
     gg.fillRect( cellRect.x, cellRect.y, cellRect.width, cellRect.height );
-    if ( header != null )
-      header.add( rendererPane );
-    else
+    if ( header != null ) {
+      if ( rendererPane.getParent() != header )
+        header.add( rendererPane );
+    } else if ( rendererPane.getParent() != table )
       table.add( rendererPane );
     JBroTableHeaderUI.htmlHack( gg, comp, cellRect );
     rendererPane.paintComponent( gg, comp, table, cellRect.x, cellRect.y, cellRect.width, cellRect.height, true );

@@ -23,10 +23,13 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import javax.swing.AbstractButton;
 import javax.swing.CellRendererPane;
 import javax.swing.JComponent;
+import javax.swing.JLabel;
 import javax.swing.JScrollPane;
 import javax.swing.JTable;
+import javax.swing.JToolTip;
 import javax.swing.JViewport;
 import javax.swing.RowSorter;
 import javax.swing.SwingUtilities;
@@ -34,6 +37,7 @@ import javax.swing.UIManager;
 import javax.swing.border.Border;
 import javax.swing.event.MouseInputListener;
 import javax.swing.plaf.ComponentUI;
+import javax.swing.plaf.basic.BasicHTML;
 import javax.swing.plaf.basic.BasicTableHeaderUI;
 import javax.swing.table.JTableHeader;
 import javax.swing.table.TableCellRenderer;
@@ -441,6 +445,17 @@ public class JBroTableHeaderUI extends BasicTableHeaderUI {
    * @param cellRect a space where the component should be painted
    */
   public static void htmlHack( Graphics g, Component component, Rectangle cellRect ) {
+    String text;
+    if ( component instanceof JLabel )
+      text = ( ( JLabel )component ).getText();
+    else if ( component instanceof AbstractButton )
+      text = ( ( AbstractButton )component ).getText();
+    else if ( component instanceof JToolTip )
+      text = ( ( JToolTip )component ).getTipText();
+    else
+      text = null;
+    if ( !BasicHTML.isHTMLString( text ) )
+      return;
     component.setBounds( cellRect );
     Graphics gg = g.create( -cellRect.width, -cellRect.height, cellRect.width, cellRect.height );
     try {

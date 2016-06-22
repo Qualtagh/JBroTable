@@ -49,8 +49,7 @@ public class JBroTableColumnModel extends DefaultTableColumnModel {
   public void propertyChange( PropertyChangeEvent e ) {
     String name = e.getPropertyName();
     if ( "width".equals( name ) && table.getAutoResizeMode() != JTable.AUTO_RESIZE_ALL_COLUMNS && e.getSource() instanceof JBroTableColumn && e.getNewValue() instanceof Integer && e.getOldValue() instanceof Integer ) {
-      if ( totalColumnWidth >= 0 )
-        totalColumnWidth += ( Integer )e.getNewValue() - ( Integer )e.getOldValue();
+      totalColumnWidth = -1;
       JBroTableColumn column = ( JBroTableColumn )e.getSource();
       Enumeration< TableColumn > cols = getColumns();
       int x = 0;
@@ -60,8 +59,12 @@ public class JBroTableColumnModel extends DefaultTableColumnModel {
           break;
         x += col.getWidth();
       }
+      table.revalidate();
       JBroTableHeader header = table.getTableHeader();
+      JBroTableHeaderUI ui = header.getUI();
       header.repaintHeaderAndTable( x, 0, header.getWidth() - x );
+      while ( ( column = getColumnParent( column ) ) != null )
+        header.repaint( ui.getGroupHeaderBoundsFor( column ) );
     } else
       super.propertyChange( e );
   }

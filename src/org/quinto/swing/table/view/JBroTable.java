@@ -2,6 +2,8 @@ package org.quinto.swing.table.view;
 
 import java.awt.Component;
 import java.awt.Rectangle;
+import java.awt.event.AdjustmentEvent;
+import java.awt.event.AdjustmentListener;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.beans.PropertyChangeEvent;
@@ -12,12 +14,14 @@ import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import javax.swing.JScrollBar;
 import javax.swing.JScrollPane;
 import javax.swing.JTable;
 import javax.swing.JViewport;
 import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
 import javax.swing.event.ListSelectionEvent;
+import javax.swing.event.RowSorterEvent;
 import javax.swing.event.TableColumnModelEvent;
 import javax.swing.event.TableModelEvent;
 import javax.swing.plaf.TableUI;
@@ -78,6 +82,8 @@ public class JBroTable extends JTable {
   }
 
   private void refresh() {
+    if ( getUI() != null )
+      getUI().clearCellImagesCache();
     revalidate();
     repaint( getVisibleRect() );
   }
@@ -535,23 +541,44 @@ public class JBroTable extends JTable {
           fixed.setFillsViewportHeight( getFillsViewportHeight() );
       }
     } );
+    JScrollBar scrollBar = scrollPane.getVerticalScrollBar();
+    if ( scrollBar != null ) {
+      scrollBar.addAdjustmentListener( new AdjustmentListener() {
+        @Override
+        public void adjustmentValueChanged( AdjustmentEvent e ) {
+          if ( e.getAdjustmentType() == AdjustmentEvent.TRACK )
+            getUI().setRowsScrolling( e.getValueIsAdjusting() );
+        }
+      } );
+    }
     return scrollPane;
   }
 
   @Override
   public void tableChanged( TableModelEvent e ) {
+    if ( getUI() != null )
+      getUI().clearCellImagesCache();
     super.tableChanged( e );
     if ( e == null || e.getFirstRow() == TableModelEvent.HEADER_ROW )
       tableStructureChanged();
   }
   
   private void tableStructureChanged() {
+    if ( getTableHeader() != null && getTableHeader().getUI() != null )
+      getTableHeader().getUI().clearCellImagesCache();
     updateScrollPane();
     JBroTableHeader header = getTableHeader();
     if ( header != null ) {
       header.updateUI();
       header.repaint();
     }
+  }
+
+  @Override
+  public void sorterChanged( RowSorterEvent e ) {
+    if ( getTableHeader() != null && getTableHeader().getUI() != null )
+      getTableHeader().getUI().clearCellImagesCache();
+    super.sorterChanged( e );
   }
 
   /**

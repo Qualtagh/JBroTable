@@ -5,11 +5,13 @@ import java.awt.Container;
 import java.awt.Cursor;
 import java.awt.Dimension;
 import java.awt.Graphics;
+import java.awt.Image;
 import java.awt.Point;
 import java.awt.Rectangle;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseListener;
 import java.awt.event.MouseMotionListener;
+import java.awt.image.BufferedImage;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
@@ -20,6 +22,7 @@ import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import javax.swing.CellRendererPane;
 import javax.swing.JComponent;
 import javax.swing.JScrollPane;
@@ -37,6 +40,7 @@ import javax.swing.table.TableCellRenderer;
 import javax.swing.table.TableColumn;
 import org.apache.log4j.Logger;
 import org.quinto.swing.table.model.IModelFieldGroup;
+import org.quinto.swing.table.model.LRUCache;
 import org.quinto.swing.table.model.ModelData;
 
 public class JBroTableHeaderUI extends BasicTableHeaderUI {
@@ -55,6 +59,8 @@ public class JBroTableHeaderUI extends BasicTableHeaderUI {
   private ReverseBorder lastBorder;
   private CustomTableHeaderRenderer customRenderer;
   private int heightsCache[];
+  private boolean cacheUsed = true;
+  private final LRUCache< List< Object >, Image > cellImagesCache = new LRUCache< List< Object >, Image >( 1000 );
   
   public JBroTableHeaderUI( JBroTable table ) {
     this.table = table;
@@ -70,6 +76,21 @@ public class JBroTableHeaderUI extends BasicTableHeaderUI {
       installUI( header );
     }
     updating = false;
+  }
+  
+  public void clearCellImagesCache() {
+    if ( !cellImagesCache.isEmpty() )
+      cellImagesCache.clear();
+  }
+
+  public boolean isCacheUsed() {
+    return cacheUsed;
+  }
+
+  public void setCacheUsed( boolean cacheUsed ) {
+    this.cacheUsed = cacheUsed;
+    if ( !cacheUsed )
+      clearCellImagesCache();
   }
 
   public CustomTableHeaderRenderer getCustomRenderer() {
@@ -216,6 +237,7 @@ public class JBroTableHeaderUI extends BasicTableHeaderUI {
     delegates.clear();
     headers.clear();
     rendererPanes.clear();
+    clearCellImagesCache();
   }
 
   @Override
@@ -441,12 +463,22 @@ public class JBroTableHeaderUI extends BasicTableHeaderUI {
   }
 
   private void paintCell( Graphics g, Rectangle cellRect, JBroTableColumn group ) {
+    Object value = group.getHeaderValue();
+    int row = group.getY();
+    List< Object > key;
+    if ( isCacheUsed() ) {
+      key = Arrays.< Object >asList( String.valueOf( value ), row, group.getIdentifier(), group == getHeader().getDraggedGroup(), group == selectedColumn, cellRect.width, cellRect.height );
+      Image image = cellImagesCache.get( key );
+      if ( image != null ) {
+        g.drawImage( image, cellRect.x, cellRect.y, null );
+        return;
+      }
+    } else
+      key = null;
     TableCellRenderer renderer = getRenderer( group );
     boolean parentUIdeterminesRolloverColumnItself = hasParentUI( renderer );
     boolean rollover = parentUIdeterminesRolloverColumnItself ? group == getHeader().getDraggedGroup() : group == selectedColumn;
     table.setCurrentLevel( group.getY() );
-    Object value = group.getHeaderValue();
-    int row = group.getY();
     JBroTableColumnModel tcm = getTableColumnModel();
     int viewColumn = tcm.getColumnRelativeIndex( group );
     Component comp = renderer.getTableCellRendererComponent( table, value, rollover, rollover, row, viewColumn );
@@ -482,7 +514,15 @@ public class JBroTableHeaderUI extends BasicTableHeaderUI {
       }
       comp = customRenderer.getTableCellRendererComponent( comp, table, value, rollover, rollover, group == getHeader().getDraggedGroup(), row, viewColumn, modelColumn, dataField );
     }
-    paintCell( g, comp, cellRect );
+    if ( isCacheUsed() ) {
+      Image image = new BufferedImage( cellRect.width, cellRect.height, BufferedImage.TYPE_INT_ARGB );
+      Graphics gg = image.getGraphics();
+      gg.translate( -cellRect.x, -cellRect.y );
+      paintCell( gg, comp, cellRect );
+      g.drawImage( image, cellRect.x, cellRect.y, null );
+      cellImagesCache.put( key, image );
+    } else
+      paintCell( g, comp, cellRect );
   }
 
   public int getGroupHeight( JBroTableColumn group ) {
@@ -971,6 +1011,22 @@ public class JBroTableHeaderUI extends BasicTableHeaderUI {
         int addition = table.getShowVerticalLines() ? 1 : 0;
         int draggedWidth = getGroupWidth( draggedColumn ) + Math.abs( diff ) + addition;
         int draggedX = getGroupX( draggedColumn ) + draggedDistance + Math.min( 0, diff ) - addition;
+        // A hack to avoid column blinking on dragging.
+        // It shrinks repaint area.
+        if ( isCacheUsed() ) {
+          diff *= 2;
+          if ( diff > 0 ) {
+            if ( diff > 30 )
+              diff = 30;
+            draggedX -= diff;
+            draggedWidth += diff;
+          } else {
+            if ( diff < -30 )
+              diff = -30;
+            draggedWidth -= diff;
+          }
+        }
+        // End of hack.
         int x;
         int width;
         if ( moved ) {
@@ -1014,6 +1070,53 @@ public class JBroTableHeaderUI extends BasicTableHeaderUI {
           if ( end > pend )
             width -= end - pend;
         }
+        Set< String > spannedColumns = table.getUI().getSpannedColumns();
+        if ( !spannedColumns.isEmpty() ) {
+          int tableX = x;
+          int tableWidth = width;
+          int cMin = groupModel.getColumnIndexAtX( x );
+          int cMax = groupModel.getColumnIndexAtX( x + width - 1 );
+          int cCnt = groupModel.getColumnCount();
+          boolean containsSpans = false;
+          for ( int i = cMin < 0 ? cCnt : cMin; i <= cMax; i++ ) {
+            if ( i >= cCnt )
+              break;
+            JBroTableColumn col = groupModel.getColumn( i );
+            if ( spannedColumns.contains( col.getIdentifier() ) ) {
+              containsSpans = true;
+              break;
+            }
+          }
+          if ( containsSpans ) {
+            for ( int i = cMin - 1; i >= 0; i-- ) {
+              JBroTableColumn col = groupModel.getColumn( i );
+              if ( !spannedColumns.contains( col.getIdentifier() ) )
+                break;
+              if ( i == cMin - 1 ) {
+                int gx = getGroupX( col );
+                tableWidth += tableX - gx;
+                tableX = gx;
+              } else {
+                tableX -= col.getWidth();
+                tableWidth += col.getWidth();
+              }
+            }
+            for ( int i = cMax < 0 ? cCnt : cMax + 1; i < cCnt; i++ ) {
+              JBroTableColumn col = groupModel.getColumn( i );
+              if ( !spannedColumns.contains( col.getIdentifier() ) )
+                break;
+              if ( i == cMax + 1 )
+                tableWidth = getGroupX( col ) + col.getWidth() - tableX;
+              else
+                tableWidth += col.getWidth();
+            }
+            if ( tableWidth > width ) {
+              x = tableX;
+              width = tableWidth;
+              y = 0;
+            }
+          }
+        }
         if ( width > 0 )
           header.repaintHeaderAndTable( x, y, width );
         prevMouseX = mouseX;
@@ -1044,6 +1147,7 @@ public class JBroTableHeaderUI extends BasicTableHeaderUI {
       header.setDraggedDistance( 0 );
       header.setResizingColumn( null );
       header.setDraggedColumn( null );
+      table.getUI().clearDraggedAreaCache();
       updateRolloverColumn( e );
       if ( draggedDistance > draggedWidth || draggedDistance < -draggedWidth ) {
         header.repaintHeaderAndTable( draggedX + draggedDistance, y, draggedWidth );

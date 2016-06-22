@@ -5,13 +5,18 @@ import java.awt.Component;
 import java.awt.Dimension;
 import java.awt.FontMetrics;
 import java.awt.Graphics;
+import java.awt.Image;
 import java.awt.Point;
 import java.awt.Rectangle;
 import java.awt.Toolkit;
+import java.awt.image.BufferedImage;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.IdentityHashMap;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import javax.swing.JComponent;
@@ -24,6 +29,7 @@ import javax.swing.table.TableCellRenderer;
 import javax.swing.table.TableColumn;
 import javax.swing.table.TableColumnModel;
 import org.quinto.swing.table.model.IModelFieldGroup;
+import org.quinto.swing.table.model.LRUCache;
 import org.quinto.swing.table.model.ModelData;
 import org.quinto.swing.table.model.ModelField;
 import org.quinto.swing.table.model.ModelSpan;
@@ -34,6 +40,38 @@ public class JBroTableUI extends BasicTableUI {
   private boolean spanCoveredCells[][] = new boolean[ 0 ][ 0 ];
   private final JTableHeader innerHeader = new JTableHeader();
   private boolean noDefaults;
+  private volatile boolean rowsScrolling;
+  private final LRUCache< List< Object >, Image > cellImagesCache = new LRUCache< List< Object >, Image >( 1000 );
+  private Image draggedAreaCache;
+  private boolean cacheUsed = true;
+  
+  public void clearCellImagesCache() {
+    if ( !cellImagesCache.isEmpty() )
+      cellImagesCache.clear();
+  }
+  
+  public void clearDraggedAreaCache() {
+    draggedAreaCache = null;
+  }
+
+  public boolean isCacheUsed() {
+    return cacheUsed;
+  }
+
+  public void setCacheUsed( boolean cacheUsed ) {
+    this.cacheUsed = cacheUsed;
+    if ( !cacheUsed ) {
+      rowsScrolling = true;
+      clearCellImagesCache();
+      clearDraggedAreaCache();
+    }
+  }
+
+  void setRowsScrolling( boolean rowsScrolling ) {
+    if ( !this.rowsScrolling && rowsScrolling )
+      clearCellImagesCache();
+    this.rowsScrolling = rowsScrolling;
+  }
   
   @Override
   public void paint( Graphics g, JComponent c ) {
@@ -60,13 +98,25 @@ public class JBroTableUI extends BasicTableUI {
       cMin = 0;
     if ( cMax == -1 || cMax >= columnCount )
       cMax = columnCount - 1;
-    if ( spanCoveredCells.length <= rMax || spanCoveredCells.length > 0 && spanCoveredCells[ 0 ].length <= cMax )
-      spanCoveredCells = new boolean[ rMax + 1 ][ cMax + 1 ];
-    else
-      for ( int i = rMin; i <= rMax; i++ )
-        Arrays.fill( spanCoveredCells[ i ], cMin, cMax + 1, false );
+    JBroTableColumnModel cm = ( JBroTableColumnModel )table.getColumnModel();
+    boolean hasAnySpans = false;
+    for ( int column = cMin; column <= cMax; column++ ) {
+      JBroTableColumn aColumn = cm.getColumn( column );
+      String columnName = ( String )aColumn.getIdentifier();
+      if ( spans.containsKey( columnName ) ) {
+        hasAnySpans = true;
+        break;
+      }
+    }
+    if ( hasAnySpans ) {
+      if ( spanCoveredCells.length <= rMax - rMin || spanCoveredCells.length > 0 && spanCoveredCells[ 0 ].length <= cMax - cMin )
+        spanCoveredCells = new boolean[ rMax - rMin + 1 ][ cMax - cMin + 1 ];
+      else
+        for ( int i = rMax - rMin; i >= 0; i-- )
+          Arrays.fill( spanCoveredCells[ i ], 0, cMax - cMin + 1, false );
+    }
     paintGrid( g, rMin, rMax, cMin, cMax );
-    paintCells( g, rMin, rMax, cMin, cMax );
+    paintCells( g, rMin, rMax, cMin, cMax, hasAnySpans );
     paintDropLines( g );
   }
 
@@ -200,106 +250,117 @@ public class JBroTableUI extends BasicTableUI {
     }
   }
 
-  private void paintCells( Graphics g, int rMin, int rMax, int cMin, int cMax ) {
+  private void paintCells( Graphics g, int rMin, int rMax, int cMin, int cMax, boolean hasAnySpans ) {
     JBroTableHeader header = ( JBroTableHeader )table.getTableHeader();
     JBroTableColumn draggedColumn = header == null ? null : header.getDraggedGroup();
     JBroTableColumnModel cm = ( JBroTableColumnModel )table.getColumnModel();
     IModelFieldGroup draggedField = cm.getModelField( draggedColumn );
     int columnMargin = cm.getColumnMargin();
-    Rectangle cellRect;
     Rectangle spannedCellRect = new Rectangle();
-    JBroTableColumn aColumn;
-    int columnWidth;
     int rowCount = table.getRowCount();
     int columnCount = table.getColumnCount();
     ModelData data = ( ( JBroTable )table ).getData();
-    Rectangle focusedRegion = new Rectangle( -1, -1, -1, -1 );
+    Rectangle focusedRegion;
     if ( table.isFocusOwner() ) {
-      focusedRegion = getSpanCoordinates( table.getColumnModel().getSelectionModel().getLeadSelectionIndex(), table.getSelectionModel().getLeadSelectionIndex() );
+      if ( hasAnySpans )
+        focusedRegion = getSpanCoordinates( table.getColumnModel().getSelectionModel().getLeadSelectionIndex(), table.getSelectionModel().getLeadSelectionIndex() );
+      else
+        focusedRegion = new Rectangle( table.getColumnModel().getSelectionModel().getLeadSelectionIndex(), table.getSelectionModel().getLeadSelectionIndex(), 1, 1 );
       focusedRegion.width += focusedRegion.x;
       focusedRegion.height += focusedRegion.y;
-    }
+    } else
+      focusedRegion = new Rectangle( -1, -1, -1, -1 );
     for ( int row = rMin; row <= rMax; row++ ) {
       int modelRow = table.convertRowIndexToModel( row );
-      cellRect = table.getCellRect( row, cMin, false );
+      Rectangle cellRect = table.getCellRect( row, cMin, false );
       for ( int column = cMin; column <= cMax; column++ ) {
-        aColumn = cm.getColumn( column );
+        JBroTableColumn aColumn = cm.getColumn( column );
         ModelField field = ( ModelField )cm.getModelField( aColumn );
-        columnWidth = aColumn.getWidth();
+        int columnWidth = aColumn.getWidth();
         cellRect.width = columnWidth - columnMargin;
         if ( !field.isDescendantOf( draggedField, true ) ) {
           if ( table.isEditing() && table.getEditingRow() == row && table.getEditingColumn() == column )
             paintEditingCell( g, cellRect );
-          else if ( !spanCoveredCells[ row ][ column ] ) {
-            String columnName = ( String )aColumn.getIdentifier();
-            Map< String, ModelSpan > columnSpans = spans.get( columnName );
+          else if ( !hasAnySpans || !spanCoveredCells[ row - rMin ][ column - cMin ] ) {
             Object value = null;
             boolean valueInitialized = false;
             boolean drawAsHeader = false;
             spannedCellRect.setBounds( cellRect );
-            if ( columnSpans != null ) {
-              for ( Map.Entry< String, ModelSpan > spanWithId : columnSpans.entrySet() ) {
-                String idColumn = spanWithId.getKey();
-                int idIdx = data.getIndexOfModelField( idColumn );
-                if ( idIdx < 0 )
-                  continue;
-                Object id = data.getValue( modelRow, idIdx );
-                if ( id == null )
-                  continue;
-                ModelSpan span = spanWithId.getValue();
-                Set< String > columns = span.getColumns();
-                int fromCol = column - 1;
-                for ( ; fromCol >= 0; fromCol-- ) {
-                  TableColumn spanCoveredColumn = cm.getColumn( fromCol );
-                  if ( !columns.contains( ( String )spanCoveredColumn.getIdentifier() ) )
-                    break;
-                  int width = spanCoveredColumn.getWidth();
-                  spannedCellRect.width += width;
-                  spannedCellRect.x -= width;
-                }
-                int toCol = column + 1;
-                for ( ; toCol < columnCount; toCol++ ) {
-                  TableColumn spanCoveredColumn = cm.getColumn( toCol );
-                  if ( !columns.contains( ( String )spanCoveredColumn.getIdentifier() ) )
-                    break;
-                  spannedCellRect.width += spanCoveredColumn.getWidth();
-                }
-                int fromRow = row - 1;
-                for ( ; fromRow >= 0; fromRow-- ) {
-                  if ( !id.equals( data.getValue( table.convertRowIndexToModel( fromRow ), idIdx ) ) )
-                    break;
-                  int height = table.getRowHeight( fromRow );
-                  spannedCellRect.height += height;
-                  spannedCellRect.y -= height;
-                }
-                int toRow = row + 1;
-                for ( ; toRow < rowCount; toRow++ ) {
-                  if ( !id.equals( data.getValue( table.convertRowIndexToModel( toRow ), idIdx ) ) )
-                    break;
-                  spannedCellRect.height += table.getRowHeight( toRow );
-                }
-                for ( int i = fromRow + 1; i < spanCoveredCells.length; i++ ) {
-                  if ( i >= toRow )
-                    break;
-                  for ( int j = fromCol + 1; j < spanCoveredCells[ i ].length; j++ ) {
-                    if ( j >= toCol )
+            if ( hasAnySpans ) {
+              String columnName = ( String )aColumn.getIdentifier();
+              Map< String, ModelSpan > columnSpans = spans.get( columnName );
+              if ( columnSpans != null ) {
+                for ( Map.Entry< String, ModelSpan > spanWithId : columnSpans.entrySet() ) {
+                  String idColumn = spanWithId.getKey();
+                  int idIdx = data.getIndexOfModelField( idColumn );
+                  if ( idIdx < 0 )
+                    continue;
+                  Object id = data.getValue( modelRow, idIdx );
+                  if ( id == null )
+                    continue;
+                  ModelSpan span = spanWithId.getValue();
+                  Set< String > columns = span.getColumns();
+                  int fromCol = column - 1;
+                  for ( ; fromCol >= 0; fromCol-- ) {
+                    TableColumn spanCoveredColumn = cm.getColumn( fromCol );
+                    if ( !columns.contains( ( String )spanCoveredColumn.getIdentifier() ) )
                       break;
-                    spanCoveredCells[ i ][ j ] = true;
+                    int width = spanCoveredColumn.getWidth();
+                    spannedCellRect.width += width;
+                    spannedCellRect.x -= width;
                   }
+                  int toCol = column + 1;
+                  for ( ; toCol < columnCount; toCol++ ) {
+                    TableColumn spanCoveredColumn = cm.getColumn( toCol );
+                    if ( !columns.contains( ( String )spanCoveredColumn.getIdentifier() ) )
+                      break;
+                    spannedCellRect.width += spanCoveredColumn.getWidth();
+                  }
+                  int fromRow = row - 1;
+                  for ( ; fromRow >= 0; fromRow-- ) {
+                    if ( !id.equals( data.getValue( table.convertRowIndexToModel( fromRow ), idIdx ) ) )
+                      break;
+                    int height = table.getRowHeight( fromRow );
+                    spannedCellRect.height += height;
+                    spannedCellRect.y -= height;
+                  }
+                  int toRow = row + 1;
+                  for ( ; toRow < rowCount; toRow++ ) {
+                    if ( !id.equals( data.getValue( table.convertRowIndexToModel( toRow ), idIdx ) ) )
+                      break;
+                    spannedCellRect.height += table.getRowHeight( toRow );
+                  }
+                  fromRow -= rMin;
+                  if ( fromRow < -1 )
+                    fromRow = -1;
+                  toRow -= rMin;
+                  fromCol -= cMin;
+                  if ( fromCol < -1 )
+                    fromCol = -1;
+                  toCol -= cMin;
+                  for ( int i = fromRow + 1; i < spanCoveredCells.length; i++ ) {
+                    if ( i >= toRow )
+                      break;
+                    for ( int j = fromCol + 1; j < spanCoveredCells[ i ].length; j++ ) {
+                      if ( j >= toCol )
+                        break;
+                      spanCoveredCells[ i ][ j ] = true;
+                    }
+                  }
+                  valueInitialized = true;
+                  value = data.getValue( modelRow, span.getValueColumn() );
+                  drawAsHeader = span.isDrawAsHeader();
+                  break;
                 }
-                valueInitialized = true;
-                value = data.getValue( modelRow, span.getValueColumn() );
-                drawAsHeader = span.isDrawAsHeader();
-                break;
+              }
+              if ( drawAsHeader ) {
+                spannedCellRect.height += table.getRowMargin();
+                spannedCellRect.width += columnMargin;
               }
             }
             if ( !valueInitialized )
               value = table.getValueAt( row, column );
-            if ( drawAsHeader ) {
-              spannedCellRect.height += table.getRowMargin();
-              spannedCellRect.width += columnMargin;
-            }
-            paintCell( g, spannedCellRect, row, column, value, drawAsHeader, focusedRegion.x <= column && column < focusedRegion.width && focusedRegion.y <= row && row < focusedRegion.height );
+            paintCell( g, spannedCellRect, row, column, value, drawAsHeader, focusedRegion.x <= column && column < focusedRegion.width && focusedRegion.y <= row && row < focusedRegion.height, modelRow, field.getIdentifier() );
           }
         }
         cellRect.x += columnWidth;
@@ -320,36 +381,49 @@ public class JBroTableUI extends BasicTableUI {
     g.setColor( table.getParent().getBackground() );
     g.fillRect( vacatedColumnRect.x, vacatedColumnRect.y, vacatedColumnRect.width - ( vacatedColumnRect.width > 0 && table.getShowVerticalLines() && endIndex < cm.getColumnCount() - 1 ? 1 : 0 ), vacatedColumnRect.height );
     vacatedColumnRect.x += distance;
-    g.setColor( table.getBackground() );
-    g.fillRect( vacatedColumnRect.x, vacatedColumnRect.y, vacatedColumnRect.width, vacatedColumnRect.height );
+    if ( draggedAreaCache != null ) {
+      g.drawImage( draggedAreaCache, vacatedColumnRect.x - 1, vacatedColumnRect.y, null );
+      return;
+    }
+    Graphics gg;
+    if ( isCacheUsed() ) {
+      draggedAreaCache = new BufferedImage( vacatedColumnRect.width + 1, vacatedColumnRect.height, BufferedImage.TYPE_INT_ARGB );
+      gg = draggedAreaCache.getGraphics();
+      gg.translate( 1 - vacatedColumnRect.x, -vacatedColumnRect.y );
+    } else
+      gg = g;
+    gg.setColor( table.getBackground() );
+    gg.fillRect( vacatedColumnRect.x, vacatedColumnRect.y, vacatedColumnRect.width, vacatedColumnRect.height );
     if ( table.getShowVerticalLines() ) {
-      g.setColor( table.getGridColor() );
+      gg.setColor( table.getGridColor() );
       int x1 = vacatedColumnRect.x - 1;
       int y1 = vacatedColumnRect.y;
       int y2 = y1 + vacatedColumnRect.height - 1;
-      g.drawLine( x1, y1, x1, y2 );
+      gg.drawLine( x1, y1, x1, y2 );
       for ( int draggedColumnIndex = startIndex; draggedColumnIndex <= endIndex; draggedColumnIndex++ ) {
         x1 += cm.getColumn( draggedColumnIndex ).getWidth();
-        g.drawLine( x1, y1, x1, y2 );
+        gg.drawLine( x1, y1, x1, y2 );
       }
     }
     for ( int row = rMin; row <= rMax; row++ ) {
       for ( int draggedColumnIndex = startIndex; draggedColumnIndex <= endIndex; draggedColumnIndex++ ) {
         Rectangle r = table.getCellRect( row, draggedColumnIndex, false );
         r.x += distance;
-        paintDraggedCell( g, r, row, draggedColumnIndex );
+        paintDraggedCell( gg, r, row, draggedColumnIndex );
         if ( table.getShowHorizontalLines() ) {
-          g.setColor( table.getGridColor() );
+          gg.setColor( table.getGridColor() );
           Rectangle rcr = table.getCellRect( row, draggedColumnIndex, true );
           rcr.x += distance;
           int x1 = rcr.x;
           int y1 = rcr.y;
           int x2 = x1 + rcr.width - 1;
           int y2 = y1 + rcr.height - 1;
-          g.drawLine( x1, y2, x2, y2 );
+          gg.drawLine( x1, y2, x2, y2 );
         }
       }
     }
+    if ( isCacheUsed() )
+      g.drawImage( draggedAreaCache, vacatedColumnRect.x - 1, vacatedColumnRect.y, null );
   }
 
   private void paintDraggedCell( Graphics g, Rectangle cellRect, int row, int column ) {
@@ -365,7 +439,19 @@ public class JBroTableUI extends BasicTableUI {
     component.validate();
   }
 
-  private void paintCell( Graphics g, Rectangle cellRect, int row, int column, Object value, boolean drawAsHeader, boolean hasFocus ) {
+  private void paintCell( Graphics g, Rectangle cellRect, int row, int column, Object value, boolean drawAsHeader, boolean hasFocus, int modelRow, String fieldId ) {
+    boolean isSelected = table.isCellSelected( row, column );
+    List< Object > key;
+    if ( rowsScrolling )
+      key = null;
+    else {
+      key = Arrays.< Object >asList( String.valueOf( value ), modelRow, fieldId, drawAsHeader, hasFocus, isSelected, cellRect.width, cellRect.height );
+      Image image = cellImagesCache.get( key );
+      if ( image != null ) {
+        g.drawImage( image, cellRect.x, cellRect.y, null );
+        return;
+      }
+    }
     TableCellRenderer renderer = null;
     JTableHeader header = null;
     if ( drawAsHeader ) {
@@ -384,7 +470,6 @@ public class JBroTableUI extends BasicTableUI {
       renderer = table.getCellRenderer( row, column );
       header = null;
     }
-    boolean isSelected = table.isCellSelected( row, column );
     if ( header != null ) {
       boolean parentUIdeterminesRolloverColumnItself = JBroTableHeaderUI.hasParentUI( renderer );
       row = -2;
@@ -397,14 +482,28 @@ public class JBroTableUI extends BasicTableUI {
         hasFocus = isSelected;
     }
     Component comp = renderer.getTableCellRendererComponent( table, value, isSelected, hasFocus, row, column );
-    g.setColor( header != null ? header.getBackground() : isSelected ? table.getSelectionBackground() : table.getBackground() );
-    g.fillRect( cellRect.x, cellRect.y, cellRect.width, cellRect.height );
+    Graphics gg;
+    Image image;
+    if ( rowsScrolling ) {
+      gg = g;
+      image = null;
+    } else {
+      image = new BufferedImage( cellRect.width, cellRect.height, BufferedImage.TYPE_INT_ARGB );
+      gg = image.getGraphics();
+      gg.translate( -cellRect.x, -cellRect.y );
+    }
+    gg.setColor( header != null ? header.getBackground() : isSelected ? table.getSelectionBackground() : table.getBackground() );
+    gg.fillRect( cellRect.x, cellRect.y, cellRect.width, cellRect.height );
     if ( header != null )
       header.add( rendererPane );
     else
       table.add( rendererPane );
-    JBroTableHeaderUI.htmlHack( g, comp, cellRect );
-    rendererPane.paintComponent( g, comp, table, cellRect.x, cellRect.y, cellRect.width, cellRect.height, true );
+    JBroTableHeaderUI.htmlHack( gg, comp, cellRect );
+    rendererPane.paintComponent( gg, comp, table, cellRect.x, cellRect.y, cellRect.width, cellRect.height, true );
+    if ( !rowsScrolling ) {
+      g.drawImage( image, cellRect.x, cellRect.y, null );
+      cellImagesCache.put( key, image );
+    }
   }
   
   public JBroTableUI withSpan( ModelSpan span ) {
@@ -425,6 +524,7 @@ public class JBroTableUI extends BasicTableUI {
 
   @Override
   protected void installDefaults() {
+    clearCellImagesCache();
     innerHeader.updateUI();
     if ( !noDefaults )
       super.installDefaults();
@@ -559,11 +659,23 @@ public class JBroTableUI extends BasicTableUI {
   }
   
   public Iterable< ModelSpan > getSpans() {
+    if ( spans.isEmpty() )
+      return Collections.EMPTY_SET;
     IdentityHashMap< ModelSpan, String > ret = new IdentityHashMap< ModelSpan, String >();
     for ( Map< String, ModelSpan > value : spans.values() )
       for ( ModelSpan span : value.values() )
         ret.put( span, null );
     return ret.keySet();
+  }
+  
+  public Set< String > getSpannedColumns() {
+    if ( spans.isEmpty() )
+      return Collections.EMPTY_SET;
+    Set< String > ret = new HashSet< String >();
+    for ( Map< String, ModelSpan > value : spans.values() )
+      for ( ModelSpan span : value.values() )
+        ret.addAll( span.getColumns() );
+    return ret;
   }
 
   void onRowsSelected( int firstIndex, int lastIndex ) {

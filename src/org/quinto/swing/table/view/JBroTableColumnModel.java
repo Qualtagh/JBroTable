@@ -1,5 +1,7 @@
 package org.quinto.swing.table.view;
 
+import java.awt.Container;
+import java.awt.Dimension;
 import java.beans.PropertyChangeEvent;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
@@ -12,18 +14,21 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import javax.swing.JScrollPane;
 import javax.swing.JTable;
 import javax.swing.ListSelectionModel;
 import javax.swing.event.TableColumnModelListener;
 import javax.swing.table.DefaultTableColumnModel;
 import javax.swing.table.TableColumn;
 import javax.swing.table.TableColumnModel;
+import org.apache.log4j.Logger;
 import org.quinto.swing.table.model.IModelFieldGroup;
 import org.quinto.swing.table.model.ModelData;
 import org.quinto.swing.table.model.ModelField;
 import org.quinto.swing.table.model.ModelFieldGroup;
 
 public class JBroTableColumnModel extends DefaultTableColumnModel {
+  private static final Logger LOGGER = Logger.getLogger( JBroTableColumnModel.class );
   private final List< List< JBroTableColumn > > columns = new ArrayList< List< JBroTableColumn > >();
   private final Map< String, JBroTableColumn > columnsIndex = new HashMap< String, JBroTableColumn >();
   private final JBroTable table;
@@ -48,7 +53,9 @@ public class JBroTableColumnModel extends DefaultTableColumnModel {
   @Override
   public void propertyChange( PropertyChangeEvent e ) {
     String name = e.getPropertyName();
-    if ( "width".equals( name ) && table.getAutoResizeMode() != JTable.AUTO_RESIZE_ALL_COLUMNS && e.getSource() instanceof JBroTableColumn && e.getNewValue() instanceof Integer && e.getOldValue() instanceof Integer ) {
+    if ( ( "width".equals( name ) || "preferredWidth".equals( name ) ) && table.getAutoResizeMode() != JTable.AUTO_RESIZE_ALL_COLUMNS && e.getSource() instanceof JBroTableColumn && e.getNewValue() instanceof Integer && e.getOldValue() instanceof Integer ) {
+      if ( ( ( Integer )e.getNewValue() ).intValue() == ( Integer )e.getOldValue() )
+        return;
       totalColumnWidth = -1;
       JBroTableColumn column = ( JBroTableColumn )e.getSource();
       Enumeration< TableColumn > cols = getColumns();
@@ -59,12 +66,33 @@ public class JBroTableColumnModel extends DefaultTableColumnModel {
           break;
         x += col.getWidth();
       }
-      table.revalidate();
       JBroTableHeader header = table.getTableHeader();
-      JBroTableHeaderUI ui = header.getUI();
-      header.repaintHeaderAndTable( x, 0, header.getWidth() - x );
-      while ( ( column = getColumnParent( column ) ) != null )
-        header.repaint( ui.getGroupHeaderBoundsFor( column ) );
+      if ( table.isEditing() && !table.getCellEditor().stopCellEditing() )
+        table.getCellEditor().cancelCellEditing();
+      Container parent = table.getParent() == null ? null : table.getParent().getParent();
+      if ( table.getAutoResizeMode() == JTable.AUTO_RESIZE_OFF && ( parent == null || parent instanceof JScrollPane ) ) {
+        if ( column.getPreferredWidth() != column.getWidth() ) {
+          Dimension size = table.getPreferredSize();
+          int oldW = column.getPreferredWidth();
+          column.setPreferredWidth( column.getWidth() );
+          int newW = column.getPreferredWidth();
+          size.width += newW - oldW;
+          table.setPreferredSize( size );
+          if ( parent != null ) {
+            JScrollPane scrollPane = ( JScrollPane )parent;
+            scrollPane.getHorizontalScrollBar().getModel().setMaximum( size.width );
+          }
+        }
+      } else
+        table.revalidate();
+      if ( header == null )
+        table.repaint( x, 0, table.getWidth() - x, table.getHeight() );
+      else {
+        JBroTableHeaderUI ui = header.getUI();
+        header.repaintHeaderAndTable( x, 0, header.getWidth() - x );
+        while ( ( column = getColumnParent( column ) ) != null )
+          header.repaint( ui.getGroupHeaderBoundsFor( column ) );
+      }
     } else
       super.propertyChange( e );
   }

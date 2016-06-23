@@ -70,7 +70,7 @@ public class JBroTableColumnModel extends DefaultTableColumnModel {
       if ( table.isEditing() && !table.getCellEditor().stopCellEditing() )
         table.getCellEditor().cancelCellEditing();
       Container parent = table.getParent() == null ? null : table.getParent().getParent();
-      if ( table.getAutoResizeMode() == JTable.AUTO_RESIZE_OFF && ( parent == null || parent instanceof JScrollPane ) ) {
+      if ( table.getAutoResizeMode() == JTable.AUTO_RESIZE_OFF && header != null && header.getResizingColumn() == column && ( parent == null || parent instanceof JScrollPane ) ) {
         if ( column.getPreferredWidth() != column.getWidth() ) {
           Dimension size = table.getPreferredSize();
           int oldW = column.getPreferredWidth();

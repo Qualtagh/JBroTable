@@ -1,7 +1,5 @@
 package org.quinto.swing.table.view;
 
-import java.awt.Container;
-import java.awt.Dimension;
 import java.beans.PropertyChangeEvent;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
@@ -14,9 +12,9 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import javax.swing.JScrollPane;
 import javax.swing.JTable;
 import javax.swing.ListSelectionModel;
+import javax.swing.event.ChangeEvent;
 import javax.swing.event.TableColumnModelListener;
 import javax.swing.table.DefaultTableColumnModel;
 import javax.swing.table.TableColumn;
@@ -57,42 +55,11 @@ public class JBroTableColumnModel extends DefaultTableColumnModel {
       if ( ( ( Integer )e.getNewValue() ).intValue() == ( Integer )e.getOldValue() )
         return;
       totalColumnWidth = -1;
-      JBroTableColumn column = ( JBroTableColumn )e.getSource();
-      Enumeration< TableColumn > cols = getColumns();
-      int x = 0;
-      while ( cols.hasMoreElements() ) {
-        TableColumn col = cols.nextElement();
-        if ( col == column )
-          break;
-        x += col.getWidth();
-      }
-      JBroTableHeader header = table.getTableHeader();
-      if ( table.isEditing() && !table.getCellEditor().stopCellEditing() )
-        table.getCellEditor().cancelCellEditing();
-      Container parent = table.getParent() == null ? null : table.getParent().getParent();
-      if ( table.getAutoResizeMode() == JTable.AUTO_RESIZE_OFF && header != null && header.getResizingColumn() == column && ( parent == null || parent instanceof JScrollPane ) ) {
-        if ( column.getPreferredWidth() != column.getWidth() ) {
-          Dimension size = table.getPreferredSize();
-          int oldW = column.getPreferredWidth();
-          column.setPreferredWidth( column.getWidth() );
-          int newW = column.getPreferredWidth();
-          size.width += newW - oldW;
-          table.setPreferredSize( size );
-          if ( parent != null ) {
-            JScrollPane scrollPane = ( JScrollPane )parent;
-            scrollPane.getHorizontalScrollBar().getModel().setMaximum( size.width );
-          }
-        }
-      } else
-        table.revalidate();
-      if ( header == null )
-        table.repaint( x, 0, table.getWidth() - x, table.getHeight() );
-      else {
-        JBroTableHeaderUI ui = header.getUI();
-        header.repaintHeaderAndTable( x, 0, header.getWidth() - x );
-        while ( ( column = getColumnParent( column ) ) != null )
-          header.repaint( ui.getGroupHeaderBoundsFor( column ) );
-      }
+      Object listeners[] = listenerList.getListenerList();
+      WidthChangeEvent changeEvent = new WidthChangeEvent( this, ( JBroTableColumn )e.getSource(), ( Integer )e.getOldValue(), ( Integer )e.getNewValue(), "preferredWidth".equals( name ) );
+      for ( int i = listeners.length - 2; i >= 0; i -= 2 )
+        if ( listeners[ i ] == TableColumnModelListener.class )
+          ( ( TableColumnModelListener )listeners[ i + 1 ] ).columnMarginChanged( changeEvent );
     } else
       super.propertyChange( e );
   }
@@ -407,6 +374,37 @@ public class JBroTableColumnModel extends DefaultTableColumnModel {
     while ( delegates.size() <= level )
       delegates.add( new DelegateColumnModel( delegates.size() ) );
     return delegates.get( level );
+  }
+  
+  public static class WidthChangeEvent extends ChangeEvent {
+    private final JBroTableColumn column;
+    private final int oldWidth;
+    private final int newWidth;
+    private final boolean preferred;
+
+    public WidthChangeEvent( Object source, JBroTableColumn column, int oldWidth, int newWidth, boolean preferred ) {
+      super( source );
+      this.column = column;
+      this.oldWidth = oldWidth;
+      this.newWidth = newWidth;
+      this.preferred = preferred;
+    }
+
+    public JBroTableColumn getColumn() {
+      return column;
+    }
+
+    public int getOldWidth() {
+      return oldWidth;
+    }
+
+    public int getNewWidth() {
+      return newWidth;
+    }
+
+    public boolean isPreferred() {
+      return preferred;
+    }
   }
   
   private class DelegateColumnModel implements TableColumnModel {

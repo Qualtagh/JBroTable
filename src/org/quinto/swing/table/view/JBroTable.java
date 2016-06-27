@@ -1,6 +1,8 @@
 package org.quinto.swing.table.view;
 
 import java.awt.Component;
+import java.awt.Container;
+import java.awt.Dimension;
 import java.awt.Rectangle;
 import java.awt.event.AdjustmentEvent;
 import java.awt.event.AdjustmentListener;
@@ -9,9 +11,11 @@ import java.awt.event.MouseEvent;
 import java.beans.PropertyChangeEvent;
 import java.beans.PropertyChangeListener;
 import java.util.ArrayList;
+import java.util.Enumeration;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
+import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import javax.swing.JScrollBar;
@@ -579,6 +583,70 @@ public class JBroTable extends JTable {
     if ( getTableHeader() != null && getTableHeader().getUI() != null )
       getTableHeader().getUI().clearCellImagesCache();
     super.sorterChanged( e );
+  }
+
+  @Override
+  public void columnMarginChanged( ChangeEvent e ) {
+    if ( !( e instanceof JBroTableColumnModel.WidthChangeEvent ) ) {
+      super.columnMarginChanged( e );
+      return;
+    }
+    JBroTableColumnModel.WidthChangeEvent we = ( JBroTableColumnModel.WidthChangeEvent )e;
+    JBroTableColumn column = we.getColumn();
+    JBroTableHeader header = getTableHeader();
+    TableColumnModel columnModel = header == null ? getColumnModel() : header.getColumnModel();
+    Enumeration< TableColumn > cols = columnModel.getColumns();
+    int x = 0;
+    int idx = 0;
+    while ( cols.hasMoreElements() ) {
+      TableColumn col = cols.nextElement();
+      if ( col == column )
+        break;
+      x += col.getWidth();
+      idx++;
+    }
+    if ( getUI() != null ) {
+      Set< String > spannedColumns = getUI().getSpannedColumns();
+      if ( spannedColumns.contains( column.getIdentifier() ) ) {
+        for ( ; idx >= 0; idx-- ) {
+          TableColumn col = columnModel.getColumn( idx );
+          if ( spannedColumns.contains( ( String )col.getIdentifier() ) )
+            x -= col.getWidth();
+          else
+            break;
+        }
+      }
+    }
+    if ( isEditing() && !getCellEditor().stopCellEditing() )
+      getCellEditor().cancelCellEditing();
+    Container parent = getParent() == null ? null : getParent().getParent();
+    if ( getAutoResizeMode() == JTable.AUTO_RESIZE_OFF && header != null && header.getResizingColumn() == column && ( parent == null || parent instanceof JScrollPane ) ) {
+      if ( column.getPreferredWidth() != column.getWidth() ) {
+        Dimension size = getPreferredSize();
+        int oldW = column.getPreferredWidth();
+        column.setPreferredWidth( column.getWidth() );
+        int newW = column.getPreferredWidth();
+        size.width += newW - oldW;
+        setPreferredSize( size );
+        if ( parent != null ) {
+          JScrollPane scrollPane = ( JScrollPane )parent;
+          scrollPane.getHorizontalScrollBar().getModel().setMaximum( size.width );
+        }
+      }
+    } else
+      revalidate();
+    if ( header == null )
+      repaint( x, 0, getWidth() - x, getHeight() );
+    else if ( columnModel instanceof JBroTableColumnModel ) {
+      header.repaintHeaderAndTable( x, 0, header.getWidth() - x );
+      JBroTableHeaderUI ui = header.getUI();
+      JBroTableColumnModel gcm = ( JBroTableColumnModel )columnModel;
+      while ( ( column = gcm.getColumnParent( column ) ) != null )
+        header.repaint( ui.getGroupHeaderBoundsFor( column ) );
+    } else {
+      repaint( x, 0, getWidth() - x, getHeight() );
+      header.repaint();
+    }
   }
 
   /**

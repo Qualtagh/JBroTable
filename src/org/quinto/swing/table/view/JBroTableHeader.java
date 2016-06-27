@@ -185,6 +185,12 @@ public class JBroTableHeader extends JTableHeader {
   @Override
   public void columnMoved( TableColumnModelEvent e ) {
   }
+
+  @Override
+  public void columnMarginChanged( ChangeEvent e ) {
+    if ( !( e instanceof JBroTableColumnModel.WidthChangeEvent ) )
+      super.columnMarginChanged( e );
+  }
   
   private class DelegateHeader extends JTableHeader {
     private final int level;

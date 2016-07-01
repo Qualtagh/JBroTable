@@ -68,6 +68,8 @@ public class JBroTableUI extends BasicTableUI {
   }
 
   void setRowsScrolling( boolean rowsScrolling ) {
+    if ( !isCacheUsed() )
+      rowsScrolling = true;
     if ( !this.rowsScrolling && rowsScrolling )
       clearCellImagesCache();
     this.rowsScrolling = rowsScrolling;
@@ -387,8 +389,10 @@ public class JBroTableUI extends BasicTableUI {
     }
     Graphics gg;
     if ( isCacheUsed() ) {
-      draggedAreaCache = new BufferedImage( vacatedColumnRect.width + 1, vacatedColumnRect.height, BufferedImage.TYPE_INT_ARGB );
+      draggedAreaCache = new BufferedImage( vacatedColumnRect.width + 1, vacatedColumnRect.height, BufferedImage.TYPE_INT_RGB );
       gg = draggedAreaCache.getGraphics();
+      gg.setColor( table.getParent().getBackground() );
+      gg.fillRect( 0, 0, vacatedColumnRect.width + 1, vacatedColumnRect.height );
       gg.translate( 1 - vacatedColumnRect.x, -vacatedColumnRect.y );
     } else
       gg = g;
@@ -488,8 +492,10 @@ public class JBroTableUI extends BasicTableUI {
       gg = g;
       image = null;
     } else {
-      image = new BufferedImage( cellRect.width, cellRect.height, BufferedImage.TYPE_INT_ARGB );
+      image = new BufferedImage( cellRect.width, cellRect.height, BufferedImage.TYPE_INT_RGB );
       gg = image.getGraphics();
+      gg.setColor( table.getParent().getBackground() );
+      gg.fillRect( 0, 0, cellRect.width, cellRect.height );
       gg.translate( -cellRect.x, -cellRect.y );
     }
     gg.setColor( header != null ? header.getBackground() : isSelected ? table.getSelectionBackground() : table.getBackground() );

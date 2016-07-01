@@ -530,8 +530,10 @@ public class JBroTableHeaderUI extends BasicTableHeaderUI {
       comp = customRenderer.getTableCellRendererComponent( comp, table, value, rollover, rollover, group == getHeader().getDraggedGroup(), row, viewColumn, modelColumn, dataField );
     }
     if ( isCacheUsed() ) {
-      Image image = new BufferedImage( cellRect.width, cellRect.height, BufferedImage.TYPE_INT_ARGB );
+      Image image = new BufferedImage( cellRect.width, cellRect.height, BufferedImage.TYPE_INT_RGB );
       Graphics gg = image.getGraphics();
+      gg.setColor( header.getParent().getBackground() );
+      gg.fillRect( 0, 0, cellRect.width, cellRect.height );
       gg.translate( -cellRect.x, -cellRect.y );
       paintCell( gg, comp, cellRect );
       g.drawImage( image, cellRect.x, cellRect.y, null );

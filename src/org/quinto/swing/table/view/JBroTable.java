@@ -628,6 +628,8 @@ public class JBroTable extends JTable {
         int newW = column.getPreferredWidth();
         size.width += newW - oldW;
         setPreferredSize( size );
+        if ( getParent() instanceof JViewport )
+          ( ( JViewport )getParent() ).setViewSize( size );
         if ( parent != null ) {
           JScrollPane scrollPane = ( JScrollPane )parent;
           scrollPane.getHorizontalScrollBar().getModel().setMaximum( size.width );

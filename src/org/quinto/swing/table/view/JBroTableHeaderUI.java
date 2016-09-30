@@ -359,7 +359,7 @@ public class JBroTableHeaderUI extends BasicTableHeaderUI {
     if ( cMin < 0 )
       cMin = 0;
     JBroTableHeader header = getHeader();
-    int headerHeight = header.getHeight();
+    int headerHeight = calculateHeaderHeight();
     Rectangle cellRect = new Rectangle();
     JBroTableColumn draggedColumn = header.getDraggedGroup();
     List< JBroTableColumn > currentColumns = new ArrayList< JBroTableColumn >();

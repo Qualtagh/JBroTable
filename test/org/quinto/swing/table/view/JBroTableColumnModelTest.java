@@ -2,7 +2,6 @@ package org.quinto.swing.table.view;
 
 import com.sun.java.swing.plaf.windows.WindowsLookAndFeel;
 import java.awt.FlowLayout;
-import org.quinto.swing.table.model.*;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
@@ -17,10 +16,17 @@ import javax.swing.table.TableColumn;
 import org.apache.log4j.Logger;
 import org.junit.After;
 import org.junit.AfterClass;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
-import static org.junit.Assert.*;
+import org.quinto.swing.table.model.IModelFieldGroup;
+import org.quinto.swing.table.model.ModelData;
+import org.quinto.swing.table.model.ModelField;
+import org.quinto.swing.table.model.ModelFieldGroup;
+import org.quinto.swing.table.model.ModelRow;
+import org.quinto.swing.table.model.Utils;
 
 public class JBroTableColumnModelTest {
   private static final Logger LOGGER = Logger.getLogger( JBroTableColumnModelTest.class );
@@ -469,6 +475,25 @@ public class JBroTableColumnModelTest {
     assertEquals( "K", gcm.getColumn( 6 ).getIdentifier() );
     assertEquals( "M", gcm.getColumn( 7 ).getIdentifier() );
     assertEquals( "N", gcm.getColumn( 8 ).getIdentifier() );
+  }
+  
+  @Test( timeout = 1000L )
+  public void addRow() {
+    JBroTableModel model = table.getModel();
+    int rc = model.getRowCount();
+    model.addRow( new Object[ 0 ] );
+    model.addRow( new Object[ 100 ] );
+    assertEquals( rc + 2, model.getRowCount() );
+    assertEquals( data.getRows()[ rc ], data.getRows()[ rc + 1 ] );
+  }
+  
+  @Test( timeout = 1000L )
+  public void addColumn() {
+    JBroTableModel model = table.getModel();
+    int fc = data.getFieldsCount();
+    model.addColumn( "H", new ModelFieldGroup( "NEW", "New" ).withChild( new ModelField( "CHILD", "Child" ) ) );
+    assertTrue( model.getData() != data );
+    assertEquals( fc + 1, model.getData().getFieldsCount() );
   }
   
   public static void main( String args[] ) {

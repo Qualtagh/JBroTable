@@ -1,5 +1,7 @@
 package org.quinto.swing.table.model;
 
+import java.util.Arrays;
+
 /**
  * Data row.
  */
@@ -20,6 +22,16 @@ public class ModelRow implements java.io.Serializable {
   
   public ModelRow( Object... values ) {
     this.values = values;
+  }
+
+  @Override
+  public int hashCode() {
+    return Arrays.deepHashCode( values );
+  }
+
+  @Override
+  public boolean equals( Object obj ) {
+    return obj instanceof ModelRow && Arrays.deepEquals( values, ( ( ModelRow )obj ).values );
   }
 
   @Override

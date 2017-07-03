@@ -109,6 +109,7 @@ public class ModelFieldGroup implements IModelFieldGroup, Serializable {
       ModelFieldGroup ancestor = this;
       while ( ancestor != null ) {
         ancestor.colspan += childColspan;
+        ancestor.childrenRowspan = -1;
         ancestor = ( ModelFieldGroup )ancestor.getParent();
       }
       if ( child instanceof ModelField )

@@ -12,19 +12,21 @@ import java.util.LinkedHashSet;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import javax.swing.JTable;
+import javax.swing.SwingUtilities;
 import javax.swing.event.ChangeEvent;
 import javax.swing.event.ListSelectionEvent;
 import javax.swing.event.TableColumnModelEvent;
 import javax.swing.event.TableColumnModelListener;
+import javax.swing.event.TableModelEvent;
 import javax.swing.plaf.TableHeaderUI;
 import javax.swing.plaf.TableUI;
 import javax.swing.table.JTableHeader;
 import javax.swing.table.TableColumn;
 import javax.swing.table.TableColumnModel;
 import org.apache.log4j.Logger;
+import org.quinto.swing.table.model.IModelFieldGroup;
 import org.quinto.swing.table.model.ModelData;
 import org.quinto.swing.table.model.ModelField;
-import org.quinto.swing.table.model.IModelFieldGroup;
 import org.quinto.swing.table.model.Utils;
 
 public class JBroTable extends JTable {
@@ -67,6 +69,19 @@ public class JBroTable extends JTable {
   @Override
   public JBroTableUI getUI() {
     return ( JBroTableUI )super.getUI();
+  }
+
+  @Override
+  public void tableChanged( TableModelEvent e ) {
+    super.tableChanged( e );
+    if ( e.getFirstRow() == TableModelEvent.HEADER_ROW &&
+         e.getLastRow() == TableModelEvent.HEADER_ROW &&
+         e.getColumn() == TableModelEvent.ALL_COLUMNS &&
+         e.getType() == TableModelEvent.UPDATE &&
+         getTableHeader() != null )
+    {
+      SwingUtilities.updateComponentTreeUI( getTableHeader() );
+    }
   }
 
   /**

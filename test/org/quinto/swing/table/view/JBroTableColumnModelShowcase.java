@@ -9,9 +9,14 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.util.ArrayList;
 import java.util.Collections;
+import java.util.List;
+import java.util.Random;
+import javax.swing.BoxLayout;
 import javax.swing.JButton;
 import javax.swing.JFrame;
+import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.JTable;
 import javax.swing.UIManager;
@@ -23,6 +28,7 @@ import javax.swing.plaf.metal.OceanTheme;
 import javax.swing.plaf.nimbus.NimbusLookAndFeel;
 import javax.swing.table.TableColumn;
 import org.apache.log4j.Logger;
+import org.quinto.swing.table.model.IModelFieldGroup;
 import org.quinto.swing.table.model.ModelData;
 import org.quinto.swing.table.model.ModelField;
 import org.quinto.swing.table.model.ModelFieldGroup;
@@ -104,6 +110,43 @@ public class JBroTableColumnModelShowcase {
       }
     };
     lafChanger.actionPerformed( null );
+    ActionListener columnAdder = new ActionListener() {
+      private final Random random = new Random( System.nanoTime() );
+      private final int nextId[] = new int[]{ 0 };
+      
+      private IModelFieldGroup genColumn( int level ) {
+        int id = nextId[ 0 ]++;
+        String sid = "N" + id;
+        boolean b = true;
+        for ( int i = 0; i <= level; i++ )
+          b = b && random.nextBoolean();
+        return b ? new ModelFieldGroup( sid, sid ) : new ModelField( sid, sid );
+      }
+      
+      private IModelFieldGroup genGroup( int level ) {
+        IModelFieldGroup col = genColumn( level );
+        if ( col instanceof ModelFieldGroup )
+        {
+          int len = random.nextInt( 2 ) + 2;
+          for ( int i = 0; i < len; i++ )
+            ( ( ModelFieldGroup )col ).withChild( genGroup( level + 1 ) );
+        }
+        return col;
+      }
+      
+      @Override
+      public void actionPerformed( ActionEvent e ) {
+        JBroTableModel model = table.getModel();
+        List< ModelFieldGroup > groups = new ArrayList< ModelFieldGroup >();
+        for ( IModelFieldGroup group : model.getData().getAllFieldGroupsFromTop( true ) )
+          if ( group instanceof ModelFieldGroup )
+            groups.add( ( ModelFieldGroup )group );
+        String groupId = random.nextInt( 3 ) == 0 ? null : groups.get( Math.abs( random.nextInt() % groups.size() ) ).getIdentifier();
+        IModelFieldGroup column = genGroup( 0 );
+        ModelData dt = new ModelData( ModelFieldGroup.getBottomFields( new IModelFieldGroup[]{ column } ) );
+        model.addColumn( groupId, column );
+      }
+    };
     int colCnt = 10;
     int rowCnt = 10;
     ModelField fields[] = new ModelField[ colCnt ];
@@ -136,9 +179,15 @@ public class JBroTableColumnModelShowcase {
     frame.setDefaultCloseOperation( JFrame.EXIT_ON_CLOSE );
     frame.setLayout( new FlowLayout() );
     frame.add( new JScrollPane( table ) );
-    JButton button = new JButton( "click" );
+    JButton button = new JButton( "Switch L&F" );
     button.addActionListener( lafChanger );
-    frame.add( button );
+    JPanel pane = new JPanel();
+    pane.setLayout( new BoxLayout( pane, BoxLayout.Y_AXIS ) );
+    pane.add( button );
+    JButton addColumnButton = new JButton( "Add column" );
+    addColumnButton.addActionListener( columnAdder );
+    pane.add( addColumnButton );
+    frame.add( pane );
     tab = new JTable( new Integer[][]{ { 1, 2, 3 },
                                        { 4, 5, 6 },
                                        { 7, 8, 9 } },

@@ -21,16 +21,12 @@ import java.util.regex.Pattern;
 import javax.swing.JScrollBar;
 import javax.swing.JScrollPane;
 import javax.swing.JTable;
-import javax.swing.SwingUtilities;
 import javax.swing.JViewport;
 import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
 import javax.swing.event.ListSelectionEvent;
 import javax.swing.event.RowSorterEvent;
 import javax.swing.event.TableColumnModelEvent;
-import javax.swing.event.TableColumnModelListener;
-import javax.swing.event.TableModelEvent;
-import javax.swing.plaf.TableHeaderUI;
 import javax.swing.event.TableModelEvent;
 import javax.swing.plaf.TableUI;
 import javax.swing.table.JTableHeader;
@@ -87,39 +83,6 @@ public class JBroTable extends JTable {
   @Override
   public JBroTableUI getUI() {
     return ( JBroTableUI )super.getUI();
-  }
-
-  @Override
-  public void tableChanged( TableModelEvent e ) {
-    super.tableChanged( e );
-    if ( e.getFirstRow() == TableModelEvent.HEADER_ROW &&
-         e.getLastRow() == TableModelEvent.HEADER_ROW &&
-         e.getColumn() == TableModelEvent.ALL_COLUMNS &&
-         e.getType() == TableModelEvent.UPDATE &&
-         getTableHeader() != null )
-    {
-      SwingUtilities.updateComponentTreeUI( getTableHeader() );
-    }
-  }
-
-  /**
-   * Set the whole header height.
-   * @param headerHeight the whole header height, {@code null} means to let Swing determine it
-   */
-  public void setHeaderHeight( Integer headerHeight ) {
-    if ( headerHeight == null ) {
-      if ( headerHeightWatcher != null ) {
-        getColumnModel().removeColumnModelListener( headerHeightWatcher );
-      }
-    } else if ( this.headerHeight == null ) {
-      getColumnModel().addColumnModelListener( headerHeightWatcher = new HeaderHeightWatcher() );
-    }
-    this.headerHeight = headerHeight;
-    updateHeaderSize();
-  }
-
-  public int getHeaderHeight() {
-    return headerHeight == null ? 0 : headerHeight;
   }
 
   private void refresh() {

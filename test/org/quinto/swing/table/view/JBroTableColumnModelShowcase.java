@@ -21,7 +21,6 @@ import java.util.Random;
 import javax.swing.BoxLayout;
 import javax.swing.JButton;
 import javax.swing.JFrame;
-import javax.swing.JPanel;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
@@ -120,6 +119,8 @@ public class JBroTableColumnModelShowcase {
       }
     };
     lafChanger.actionPerformed( null );
+    
+    // Columns adder.
     ActionListener columnAdder = new ActionListener() {
       private final Random random = new Random( System.nanoTime() );
       private final int nextId[] = new int[]{ 0 };
@@ -153,7 +154,6 @@ public class JBroTableColumnModelShowcase {
             groups.add( ( ModelFieldGroup )group );
         String groupId = random.nextInt( 3 ) == 0 ? null : groups.get( Math.abs( random.nextInt() % groups.size() ) ).getIdentifier();
         IModelFieldGroup column = genGroup( 0 );
-        ModelData dt = new ModelData( ModelFieldGroup.getBottomFields( new IModelFieldGroup[]{ column } ) );
         model.addColumn( groupId, column );
       }
     };

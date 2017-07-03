@@ -147,7 +147,7 @@ public class JBroTableColumnModelTest {
     assertEquals( 50, ( ( JBroTableHeader )table.getTableHeader() ).getRowHeight( 2 ) );
     
     ( ( JBroTableHeader )table.getTableHeader() ).setRowHeight( 2, null );
-    table.setHeaderHeight( 200 );
+    table.getTableHeader().setRowHeight( 2, 100 );
     assertEquals( 50, ( ( JBroTableHeader )table.getTableHeader() ).getRowHeight( 0 ) );
     assertEquals( 50, ( ( JBroTableHeader )table.getTableHeader() ).getRowHeight( 1 ) );
     assertEquals( 100, ( ( JBroTableHeader )table.getTableHeader() ).getRowHeight( 2 ) );
@@ -155,14 +155,14 @@ public class JBroTableColumnModelTest {
     ( ( JBroTableHeader )table.getTableHeader() ).setRowHeight( 2, 50 );
     assertEquals( 50, ( ( JBroTableHeader )table.getTableHeader() ).getRowHeight( 0 ) );
     assertEquals( 50, ( ( JBroTableHeader )table.getTableHeader() ).getRowHeight( 1 ) );
-    assertEquals( 100, ( ( JBroTableHeader )table.getTableHeader() ).getRowHeight( 2 ) );
+    assertEquals( 50, ( ( JBroTableHeader )table.getTableHeader() ).getRowHeight( 2 ) );
   }
   
   @Test( timeout = 1000L )
   public void getRowHeightLastNotSet() {
     ( ( JBroTableHeader )table.getTableHeader() ).setRowHeight( 0, 50 );
     ( ( JBroTableHeader )table.getTableHeader() ).setRowHeight( 1, 50 );
-    table.setHeaderHeight( 200 );
+    table.getTableHeader().setRowHeight( 2, 100 );
     assertEquals( 50, ( ( JBroTableHeader )table.getTableHeader() ).getRowHeight( 0 ) );
     assertEquals( 50, ( ( JBroTableHeader )table.getTableHeader() ).getRowHeight( 1 ) );
     assertEquals( 100, ( ( JBroTableHeader )table.getTableHeader() ).getRowHeight( 2 ) );
@@ -170,7 +170,7 @@ public class JBroTableColumnModelTest {
     ( ( JBroTableHeader )table.getTableHeader() ).setRowHeight( 2, 50 );
     assertEquals( 50, ( ( JBroTableHeader )table.getTableHeader() ).getRowHeight( 0 ) );
     assertEquals( 50, ( ( JBroTableHeader )table.getTableHeader() ).getRowHeight( 1 ) );
-    assertEquals( 100, ( ( JBroTableHeader )table.getTableHeader() ).getRowHeight( 2 ) );
+    assertEquals( 50, ( ( JBroTableHeader )table.getTableHeader() ).getRowHeight( 2 ) );
   }
   
   @Test( timeout = 1000L )
@@ -515,7 +515,7 @@ public class JBroTableColumnModelTest {
     JFrame frame = new JFrame( "Testing" );
     frame.setDefaultCloseOperation( JFrame.EXIT_ON_CLOSE );
     frame.setLayout( new FlowLayout() );
-    frame.add( new JScrollPane( test.table ) );
+    frame.add( test.table.getScrollPane() );
     JTable tab = new JTable( new Object[][]{ { 1, 2, 3 },
                                              { 4, 5, 6 },
                                              { 7, 8, 9 } }, new String[]{ "a", "b", "c" } );

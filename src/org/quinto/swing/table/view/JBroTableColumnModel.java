@@ -1,25 +1,32 @@
 package org.quinto.swing.table.view;
 
+import java.beans.PropertyChangeEvent;
+import java.util.ArrayDeque;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
+import java.util.Deque;
 import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import javax.swing.JTable;
 import javax.swing.ListSelectionModel;
+import javax.swing.event.ChangeEvent;
 import javax.swing.event.TableColumnModelListener;
 import javax.swing.table.DefaultTableColumnModel;
 import javax.swing.table.TableColumn;
 import javax.swing.table.TableColumnModel;
+import org.apache.log4j.Logger;
+import org.quinto.swing.table.model.IModelFieldGroup;
 import org.quinto.swing.table.model.ModelData;
 import org.quinto.swing.table.model.ModelField;
 import org.quinto.swing.table.model.ModelFieldGroup;
-import org.quinto.swing.table.model.IModelFieldGroup;
 
 public class JBroTableColumnModel extends DefaultTableColumnModel {
+  private static final Logger LOGGER = Logger.getLogger( JBroTableColumnModel.class );
   private final List< List< JBroTableColumn > > columns = new ArrayList< List< JBroTableColumn > >();
   private final Map< String, JBroTableColumn > columnsIndex = new HashMap< String, JBroTableColumn >();
   private final JBroTable table;
@@ -39,6 +46,22 @@ public class JBroTableColumnModel extends DefaultTableColumnModel {
     delegates.clear();
     while ( getColumnCount() > 0 )
       super.removeColumn( getColumn( 0 ) );
+  }
+  
+  @Override
+  public void propertyChange( PropertyChangeEvent e ) {
+    String name = e.getPropertyName();
+    if ( ( "width".equals( name ) || "preferredWidth".equals( name ) ) && table.getAutoResizeMode() != JTable.AUTO_RESIZE_ALL_COLUMNS && e.getSource() instanceof JBroTableColumn && e.getNewValue() instanceof Integer && e.getOldValue() instanceof Integer ) {
+      if ( ( ( Integer )e.getNewValue() ).intValue() == ( Integer )e.getOldValue() )
+        return;
+      totalColumnWidth = -1;
+      Object listeners[] = listenerList.getListenerList();
+      WidthChangeEvent changeEvent = new WidthChangeEvent( this, ( JBroTableColumn )e.getSource(), ( Integer )e.getOldValue(), ( Integer )e.getNewValue(), "preferredWidth".equals( name ) );
+      for ( int i = listeners.length - 2; i >= 0; i -= 2 )
+        if ( listeners[ i ] == TableColumnModelListener.class )
+          ( ( TableColumnModelListener )listeners[ i + 1 ] ).columnMarginChanged( changeEvent );
+    } else
+      super.propertyChange( e );
   }
 
   public JBroTableColumn addColumn( IModelFieldGroup group, int x, int y ) {
@@ -127,8 +150,8 @@ public class JBroTableColumnModel extends DefaultTableColumnModel {
     return getTableColumn( parent );
   }
 
-  public List< JBroTableColumn > getColumnParents( JBroTableColumn column, boolean includeThis ) {
-    LinkedList< JBroTableColumn > ret = new LinkedList< JBroTableColumn >();
+  public Collection< JBroTableColumn > getColumnParents( JBroTableColumn column, boolean includeThis ) {
+    Deque< JBroTableColumn > ret = new ArrayDeque< JBroTableColumn >();
     JBroTableColumn col = includeThis ? column : column == null ? null : getColumnParent( column );
     while ( col != null ) {
       ret.addFirst( col );
@@ -212,7 +235,7 @@ public class JBroTableColumnModel extends DefaultTableColumnModel {
   }
   
   public JBroTableColumn getColumnAtAbsolutePosition( int xWithColspans, int level ) {
-    if ( xWithColspans < 0 )
+    if ( xWithColspans < 0 || level < 0 )
       return null;
     int ret = 0;
     for ( JBroTableColumn column : columns.get( level ) ) {
@@ -224,7 +247,7 @@ public class JBroTableColumnModel extends DefaultTableColumnModel {
   }
   
   public int getRelativePosition( int xWithColspans, int level ) {
-    if ( xWithColspans < 0 )
+    if ( xWithColspans < 0 || level < 0 )
       return -1;
     int ret = 0;
     List< JBroTableColumn > levelColumns = columns.get( level );
@@ -238,7 +261,7 @@ public class JBroTableColumnModel extends DefaultTableColumnModel {
   }
   
   public int getAbsolutePosition( int x, int level ) {
-    if ( x < 0 )
+    if ( x < 0 || level < 0 )
       return -1;
     int ret = 0;
     for ( JBroTableColumn column : columns.get( level ) ) {
@@ -251,7 +274,7 @@ public class JBroTableColumnModel extends DefaultTableColumnModel {
   }
   
   public JBroTableColumn getColumnAtRelativePosition( int x, int level ) {
-    return columns.get( level ).get( x );
+    return x < 0 || level < 0 ? null : columns.get( level ).get( x );
   }
 
   public void moveColumn( JBroTableColumn column, int newIndex ) {
@@ -351,6 +374,37 @@ public class JBroTableColumnModel extends DefaultTableColumnModel {
     while ( delegates.size() <= level )
       delegates.add( new DelegateColumnModel( delegates.size() ) );
     return delegates.get( level );
+  }
+  
+  public static class WidthChangeEvent extends ChangeEvent {
+    private final JBroTableColumn column;
+    private final int oldWidth;
+    private final int newWidth;
+    private final boolean preferred;
+
+    public WidthChangeEvent( Object source, JBroTableColumn column, int oldWidth, int newWidth, boolean preferred ) {
+      super( source );
+      this.column = column;
+      this.oldWidth = oldWidth;
+      this.newWidth = newWidth;
+      this.preferred = preferred;
+    }
+
+    public JBroTableColumn getColumn() {
+      return column;
+    }
+
+    public int getOldWidth() {
+      return oldWidth;
+    }
+
+    public int getNewWidth() {
+      return newWidth;
+    }
+
+    public boolean isPreferred() {
+      return preferred;
+    }
   }
   
   private class DelegateColumnModel implements TableColumnModel {

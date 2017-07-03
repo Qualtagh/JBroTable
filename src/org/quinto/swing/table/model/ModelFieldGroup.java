@@ -14,16 +14,17 @@ import java.util.Map;
  * A group of data fields.
  */
 public class ModelFieldGroup implements IModelFieldGroup, Serializable {
-  private static final long serialVersionUID = 3L;
+  private static final long serialVersionUID = 4L;
   
   private String identifier;
   private String caption;
   private ModelFieldGroup parent;
   private int rowspan;
+  private boolean fixed;
   private boolean manageable;
   private transient int colspan;
   private transient int childrenRowspan;
-  private final List< IModelFieldGroup > children = new ArrayList< IModelFieldGroup >();
+  private List< IModelFieldGroup > children = new ArrayList< IModelFieldGroup >();
   
   public ModelFieldGroup() {
     this( null, null );
@@ -118,6 +119,12 @@ public class ModelFieldGroup implements IModelFieldGroup, Serializable {
         ( ( ModelFieldGroup )child ).setParent( this );
       if ( !child.isManageable() )
         setManageable( false );
+      else if ( !isManageable() )
+        child.setManageable( false );
+      if ( child.isFixed() )
+        setFixed( true );
+      else if ( isFixed() )
+        child.setFixed( true );
     }
     return this;
   }
@@ -155,10 +162,21 @@ public class ModelFieldGroup implements IModelFieldGroup, Serializable {
 
   @Override
   public ModelFieldGroup clone() {
-    ModelFieldGroup ret = new ModelFieldGroup( identifier, caption )
-                            .withRowspan( rowspan )
-                            .withManageable( manageable )
-                            .withParent( parent );
+    ModelFieldGroup ret;
+    try {
+      ret = ( ModelFieldGroup )super.clone();
+      ret.childrenRowspan = -1;
+      ret.colspan = 0;
+      ret.children = new ArrayList< IModelFieldGroup >();
+    } catch ( CloneNotSupportedException e ) {
+      ret = new ModelFieldGroup();
+    }
+    ret.withIdentifier( identifier )
+       .withCaption( caption )
+       .withRowspan( rowspan )
+       .withFixed( fixed )
+       .withManageable( manageable )
+       .withParent( parent );
     for ( IModelFieldGroup child : getChildren() )
       ret = ret.withChild( child.clone() );
     return ret;
@@ -243,6 +261,32 @@ public class ModelFieldGroup implements IModelFieldGroup, Serializable {
         throw new IllegalArgumentException( "Field groups should be unbroken and should have unique DB field names. Repeated: " + field.getIdentifier() );
     }
     return ret.toArray( new IModelFieldGroup[ ret.size() ] );
+  }
+
+  @Override
+  public boolean isFixed() {
+    return fixed;
+  }
+
+  @Override
+  public void setFixed( boolean fixed ) {
+    this.fixed = fixed;
+    if ( !fixed ) {
+      for ( IModelFieldGroup child : children )
+        child.setFixed( fixed );
+    } else if ( parent != null )
+      parent.setFixed( fixed );
+  }
+
+  /**
+   * Fix (dock, freeze) this column at the left side of the table. Scrolling won't move it.
+   * @param fixed {@code false} - this column can be scrolled, {@code true} - this column is fixed at the left side of the table<br>
+   * {@code true} would make all ancestor fields fixed at the left side, {@code false} would make all descendants scrollable (thus free from fixation)
+   * @return this
+   */
+  public ModelFieldGroup withFixed( boolean fixed ) {
+    setFixed( fixed );
+    return this;
   }
 
   @Override

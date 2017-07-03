@@ -67,6 +67,7 @@ import javax.swing.JRootPane;
 import javax.swing.JTable;
 import javax.swing.JToolTip;
 import javax.swing.KeyStroke;
+import javax.swing.SwingUtilities;
 import javax.swing.TransferHandler;
 import javax.swing.border.Border;
 import javax.swing.event.AncestorListener;
@@ -88,6 +89,25 @@ public class JBroTableHeader extends JTableHeader {
   
   public int getLevelsQuantity() {
     return getColumnModel().getLevelsQuantity();
+  }
+
+  public void repaintHeaderAndTable( int x, int y, int width ) {
+    Container c = table;
+    while ( c != null ) {
+      if ( SwingUtilities.isDescendingFrom( this, c ) )
+        break;
+      c = c.getParent();
+    }
+    Rectangle headerRect = new Rectangle( x, y, width, getHeight() - y );
+    Rectangle tableRect = new Rectangle( x, 0, width, table.getHeight() );
+    if ( c == null ) {
+      repaint( headerRect );
+      table.repaint( tableRect );
+    } else {
+      Rectangle r = SwingUtilities.convertRectangle( this, headerRect, c );
+      r = r.union( SwingUtilities.convertRectangle( table, tableRect, c ) );
+      c.repaint( r.x, r.y, r.width, r.height );
+    }
   }
 
   public TableCellRenderer getDefaultRenderer( int level ) {
@@ -121,6 +141,10 @@ public class JBroTableHeader extends JTableHeader {
 
   public int getRowHeight( int level ) {
     return getUI().getRowHeight( level );
+  }
+  
+  public int getRowAtPoint( Point p ) {
+    return getUI().getRowAtPoint( p );
   }
   
   public JTableHeader createDelegateForLevel( int level ) {
@@ -160,6 +184,12 @@ public class JBroTableHeader extends JTableHeader {
 
   @Override
   public void columnMoved( TableColumnModelEvent e ) {
+  }
+
+  @Override
+  public void columnMarginChanged( ChangeEvent e ) {
+    if ( !( e instanceof JBroTableColumnModel.WidthChangeEvent ) )
+      super.columnMarginChanged( e );
   }
   
   private class DelegateHeader extends JTableHeader {

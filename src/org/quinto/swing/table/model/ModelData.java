@@ -3,13 +3,14 @@ package org.quinto.swing.table.model;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.Serializable;
+import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.Deque;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -176,7 +177,7 @@ public class ModelData implements Serializable {
     List< IModelFieldGroup > parents = new ArrayList< IModelFieldGroup >();
     FieldGroupsLoop:
     for ( IModelFieldGroup fieldGroup : fieldGroups ) {
-      ModelFieldGroup parent = ( ModelFieldGroup )fieldGroup.getParent();
+      ModelFieldGroup parent = fieldGroup.getParent();
       if ( parent != null && parent.getChildrenRowspan() == -1 ) {
         int childrenRowspan = 0;
         for ( IModelFieldGroup child : parent.getChildren() ) {
@@ -300,7 +301,7 @@ public class ModelData implements Serializable {
    */
   public Iterable< IModelFieldGroup > getAllFieldGroupsFromBottom( final boolean depthFirst ) {
     return new Iterable< IModelFieldGroup >() {
-      private final LinkedList< IModelFieldGroup > list = new LinkedList< IModelFieldGroup >( Arrays.asList( fields ) );
+      private final Deque< IModelFieldGroup > list = new ArrayDeque< IModelFieldGroup >( Arrays.asList( fields ) );
       private final Set< String > visited = new HashSet< String >();
       
       @Override
@@ -335,7 +336,7 @@ public class ModelData implements Serializable {
    */
   public Iterable< IModelFieldGroup > getAllFieldGroupsFromTop( final boolean depthFirst ) {
     return new Iterable< IModelFieldGroup >() {
-      private final LinkedList< IModelFieldGroup > list = new LinkedList< IModelFieldGroup >( fieldGroups.isEmpty() ? Collections.EMPTY_LIST : Arrays.asList( fieldGroups.get( 0 ) ) );
+      private final Deque< IModelFieldGroup > list = new ArrayDeque< IModelFieldGroup >( fieldGroups.isEmpty() ? Collections.EMPTY_LIST : Arrays.asList( fieldGroups.get( 0 ) ) );
       
       @Override
       public Iterator< IModelFieldGroup > iterator() {
@@ -348,8 +349,15 @@ public class ModelData implements Serializable {
           @Override
           public IModelFieldGroup next() {
             IModelFieldGroup ret = list.pollFirst();
-            if ( ret instanceof ModelFieldGroup )
-              list.addAll( depthFirst ? 0 : list.size(), ( ( ModelFieldGroup )ret ).getChildren() );
+            if ( ret instanceof ModelFieldGroup ) {
+              if ( depthFirst ) {
+                List< IModelFieldGroup > children = ( ( ModelFieldGroup )ret ).getChildren();
+                for ( int i = children.size() - 1; i >= 0; i-- )
+                  list.addFirst( children.get( i ) );
+              } else
+                for ( IModelFieldGroup child : ( ( ModelFieldGroup )ret ).getChildren() )
+                  list.addLast( child );
+            }
             return ret;
           }
         };

@@ -364,4 +364,152 @@ public class ModelData implements Serializable {
       }
     };
   }
+  
+  /**
+   * Return a copy of this data object with a new field (or field group) added
+   * @param addTo id of parent group (null for root) to which the new field should be inserted
+   * @param field the new column (or group) to be inserted
+   * @return a copy of this with a given field added
+   * @throws IllegalArgumentException if addTo points to a non-existing group
+   * @throws ClassCastException if addTo points to a regular field (not a group)
+   */
+  public ModelData withField( String addTo, IModelFieldGroup field ) throws IllegalArgumentException, ClassCastException {
+    if ( field == null )
+      throw new IllegalArgumentException( "Field cannot be null" );
+    int idx[] = addTo == null ? null : getIndexOfModelFieldGroup( addTo );
+    if ( idx != null && idx[ 0 ] == -1 )
+      throw new IllegalArgumentException( "Parent group \"" + addTo + "\" not found" );
+    IModelFieldGroup newGroups[];
+    if ( idx == null )
+    {
+      IModelFieldGroup groups[] = ModelFieldGroup.getUpperFieldGroups( getFields() );
+      newGroups = new IModelFieldGroup[ groups.length + 1 ];
+      System.arraycopy( groups, 0, newGroups, 0, groups.length );
+      newGroups[ groups.length ] = field;
+    }
+    else
+    {
+      ModelField newFields[] = ModelField.copyOfModelFields( getFields() );
+      ModelData idxData = new ModelData( newFields );
+      ModelFieldGroup group = ( ModelFieldGroup )idxData.getFieldGroups().get( idx[ 1 ] )[ idx[ 0 ] ];
+      group.withChild( field );
+      newGroups = ModelFieldGroup.getUpperFieldGroups( newFields );
+    }
+    ModelField newFields[] = ModelFieldGroup.getBottomFields( newGroups );
+    ModelData newData = new ModelData( newFields );
+    if ( rows != null )
+    {
+      newFields = ModelFieldGroup.getBottomFields( new IModelFieldGroup[]{ field } );
+      if ( newFields.length == 0 )
+        throw new IllegalArgumentException( "No columns found in column group \"" + field.getIdentifier() + '"' );
+      int colFromIncl = newData.getIndexOfModelField( newFields[ 0 ].getIdentifier() );
+      int colToExcl = colFromIncl + field.getColspan();
+      int newLength = newData.getFieldsCount();
+      ModelRow newRows[] = new ModelRow[ rows.length ];
+      for ( int i = 0; i < rows.length; i++ )
+      {
+        ModelRow newRow = new ModelRow( newLength );
+        newRows[ i ] = newRow;
+        Object values[] = rows[ i ].getValues();
+        if ( values == null || values.length == 0 )
+          continue;
+        Object newValues[] = newRow.getValues();
+        if ( colFromIncl > 0 )
+          System.arraycopy( values, 0, newValues, 0, colFromIncl );
+        if ( colFromIncl < values.length )
+          System.arraycopy( values, colFromIncl, newValues, colToExcl, values.length - colFromIncl );
+      }
+      newData.setRows( newRows );
+    }
+    return newData;
+  }
+  
+  /**
+   * Returns a copy of this data object without a given field (or field group)
+   * @param id identifier of a field (group) to be removed
+   * @return a copy of this with a given field removed
+   * @throws IllegalArgumentException when there are no fields with a given id
+   */
+  public ModelData withoutField( String id ) throws IllegalArgumentException {
+    int idx[] = getIndexOfModelFieldGroup( id );
+    if ( idx[ 0 ] == -1 )
+      throw new IllegalArgumentException( "Group \"" + id + "\" not found" );
+    IModelFieldGroup group = getFieldGroups().get( idx[ 1 ] )[ idx[ 0 ] ];
+    while ( true ) {
+      ModelFieldGroup parent = group.getParent();
+      if ( parent == null || parent.getChildren().size() != 1 )
+        break;
+      group = parent;
+    }
+    id = group.getIdentifier();
+    idx = getIndexOfModelFieldGroup( id );
+    ModelRow newRows[] = null;
+    if ( rows != null )
+    {
+      ModelField groupFields[] = ModelFieldGroup.getBottomFields( new IModelFieldGroup[]{ group } );
+      if ( groupFields.length > 0 ) {
+        int colToExcl = getIndexOfModelField( groupFields[ 0 ].getIdentifier() );
+        int colFromIncl = colToExcl + group.getColspan();
+        int newLength = getFieldsCount() - group.getColspan();
+        newRows = new ModelRow[ rows.length ];
+        for ( int i = 0; i < rows.length; i++ )
+        {
+          ModelRow newRow = new ModelRow( newLength );
+          newRows[ i ] = newRow;
+          Object values[] = rows[ i ].getValues();
+          if ( values == null || values.length == 0 )
+            continue;
+          Object newValues[] = newRow.getValues();
+          if ( colToExcl > 0 )
+            System.arraycopy( values, 0, newValues, 0, colToExcl );
+          if ( colFromIncl < values.length )
+            System.arraycopy( values, colFromIncl, newValues, colToExcl, values.length - colFromIncl );
+        }
+      }
+    }
+    IModelFieldGroup newGroups[];
+    if ( idx[ 1 ] == 0 )
+    {
+      IModelFieldGroup groups[] = ModelFieldGroup.getUpperFieldGroups( getFields() );
+      newGroups = new IModelFieldGroup[ groups.length - 1 ];
+      if ( idx[ 0 ] > 0 )
+        System.arraycopy( groups, 0, newGroups, 0, idx[ 0 ] );
+      if ( idx[ 0 ] < newGroups.length )
+        System.arraycopy( groups, idx[ 0 ] + 1, newGroups, idx[ 0 ], newGroups.length - idx[ 0 ] );
+    }
+    else
+    {
+      ModelField newFields[] = ModelField.copyOfModelFields( getFields() );
+      ModelData idxData = new ModelData( newFields );
+      group = idxData.getFieldGroups().get( idx[ 1 ] )[ idx[ 0 ] ];
+      ModelFieldGroup parent = group.getParent();
+      parent.removeChild( group );
+      newGroups = ModelFieldGroup.getUpperFieldGroups( newFields );
+    }
+    ModelField newFields[] = ModelFieldGroup.getBottomFields( newGroups );
+    ModelData newData = new ModelData( newFields );
+    if ( newRows != null )
+        newData.setRows( newRows );
+    return newData;
+  }
+  
+  public void removeRow( int row ) throws IndexOutOfBoundsException {
+    ModelRow newRows[] = new ModelRow[ getRowsCount() - 1 ];
+    if ( row > 0 )
+      System.arraycopy( rows, 0, newRows, 0, row );
+    if ( row < newRows.length )
+      System.arraycopy( rows, row + 1, newRows, row, newRows.length - row );
+    setRows( newRows );
+  }
+
+  public void addRow( Object rowData[] ) {
+    int row = getRowsCount();
+    ModelRow newRows[] = new ModelRow[ row + 1 ];
+    if ( row > 0 )
+      System.arraycopy( rows, 0, newRows, 0, row );
+    newRows[ row ] = new ModelRow( getFieldsCount() );
+    newRows[ row ].setValues( rowData );
+    newRows[ row ].setLength( getFieldsCount() );
+    setRows( newRows );
+  }
 }

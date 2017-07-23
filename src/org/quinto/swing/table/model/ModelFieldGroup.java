@@ -103,6 +103,17 @@ public class ModelFieldGroup implements IModelFieldGroup, Serializable {
     return Collections.unmodifiableList( children );
   }
   
+  void removeChild( IModelFieldGroup child ) {
+    children.remove( child );
+    int childColspan = child.getColspan();
+    ModelFieldGroup ancestor = this;
+    while ( ancestor != null ) {
+      ancestor.colspan -= childColspan;
+      ancestor.childrenRowspan = -1;
+      ancestor = ancestor.getParent();
+    }
+  }
+  
   public ModelFieldGroup withChild( IModelFieldGroup child ) {
     if ( child != null ) {
       children.add( child );
@@ -111,7 +122,7 @@ public class ModelFieldGroup implements IModelFieldGroup, Serializable {
       while ( ancestor != null ) {
         ancestor.colspan += childColspan;
         ancestor.childrenRowspan = -1;
-        ancestor = ( ModelFieldGroup )ancestor.getParent();
+        ancestor = ancestor.getParent();
       }
       if ( child instanceof ModelField )
         ( ( ModelField )child ).setParent( this );

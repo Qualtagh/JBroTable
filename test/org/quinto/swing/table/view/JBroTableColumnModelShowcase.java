@@ -5,6 +5,7 @@ import com.sun.java.swing.plaf.windows.WindowsClassicLookAndFeel;
 import com.sun.java.swing.plaf.windows.WindowsLookAndFeel;
 import java.awt.Color;
 import java.awt.Component;
+import java.awt.Dimension;
 import java.awt.FlowLayout;
 import java.awt.Font;
 import java.awt.Graphics;
@@ -25,6 +26,7 @@ import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.JTable;
+import javax.swing.JTextField;
 import javax.swing.SwingConstants;
 import javax.swing.UIManager;
 import javax.swing.UnsupportedLookAndFeelException;
@@ -152,7 +154,7 @@ public class JBroTableColumnModelShowcase {
         for ( IModelFieldGroup group : model.getData().getAllFieldGroupsFromTop( true ) )
           if ( group instanceof ModelFieldGroup )
             groups.add( ( ModelFieldGroup )group );
-        String groupId = random.nextInt( 3 ) == 0 ? null : groups.get( Math.abs( random.nextInt() % groups.size() ) ).getIdentifier();
+        String groupId = random.nextInt( 3 ) == 0 || groups.isEmpty() ? null : groups.get( Math.abs( random.nextInt() % groups.size() ) ).getIdentifier();
         IModelFieldGroup column = genGroup( 0 );
         model.addColumn( groupId, column );
       }
@@ -227,14 +229,26 @@ public class JBroTableColumnModelShowcase {
     frame.setDefaultCloseOperation( JFrame.EXIT_ON_CLOSE );
     frame.setLayout( new FlowLayout() );
     frame.add( table.getScrollPane() );
-    JButton button = new JButton( "Switch L&F" );
-    button.addActionListener( lafChanger );
+    JButton switchLookButton = new JButton( "Switch L&F" );
+    switchLookButton.addActionListener( lafChanger );
     JPanel pane = new JPanel();
     pane.setLayout( new BoxLayout( pane, BoxLayout.Y_AXIS ) );
-    pane.add( button );
+    pane.add( switchLookButton );
     JButton addColumnButton = new JButton( "Add column" );
     addColumnButton.addActionListener( columnAdder );
     pane.add( addColumnButton );
+    final JTextField columnToRemoveInput = new JTextField();
+    columnToRemoveInput.setMaximumSize( new Dimension( 100, 50 ) );
+    columnToRemoveInput.setAlignmentX( 0.0F );
+    pane.add( columnToRemoveInput );
+    JButton removeColumnButton = new JButton( "Remove column" );
+    removeColumnButton.addActionListener( new ActionListener() {
+      @Override
+      public void actionPerformed( ActionEvent e ) {
+        table.getModel().removeColumn( columnToRemoveInput.getText().trim().toUpperCase() );
+      }
+    } );
+    pane.add( removeColumnButton );
     frame.add( pane );
     tab = new JTable( new Integer[][]{ { 1, 2, 3 },
                                        { 4, 5, 6 },

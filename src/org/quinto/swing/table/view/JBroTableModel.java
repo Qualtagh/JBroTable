@@ -5,8 +5,6 @@ import javax.swing.table.AbstractTableModel;
 import org.quinto.swing.table.model.IModelFieldGroup;
 import org.quinto.swing.table.model.ModelData;
 import org.quinto.swing.table.model.ModelField;
-import org.quinto.swing.table.model.ModelFieldGroup;
-import org.quinto.swing.table.model.ModelRow;
 
 /**
  * Table model based on {@link ModelData}.
@@ -63,24 +61,13 @@ public class JBroTableModel extends AbstractTableModel {
   }
   
   public void removeRow( int row ) throws IndexOutOfBoundsException {
-    ModelRow newRows[] = new ModelRow[ data.getRowsCount() - 1 ];
-    if ( row < 0 )
-      System.arraycopy( data.getRows(), 0, newRows, 0, row );
-    if ( row < newRows.length )
-      System.arraycopy( data.getRows(), row + 1, newRows, row, newRows.length - row );
-    data.setRows( newRows );
+    data.removeRow( row );
     fireTableRowsDeleted( row, row );
   }
 
   public void addRow( Object rowData[] ) {
-    ModelRow newRows[] = new ModelRow[ data.getRowsCount() + 1 ];
-    int row = newRows.length - 1;
-    if ( row > 0 )
-      System.arraycopy( data.getRows(), 0, newRows, 0, row );
-    newRows[ row ] = new ModelRow( data.getFieldsCount() );
-    newRows[ row ].setValues( rowData );
-    newRows[ row ].setLength( data.getFieldsCount() );
-    data.setRows( newRows );
+    int row = data.getRowsCount();
+    data.addRow( rowData );
     fireTableRowsInserted( row, row );
   }
 
@@ -92,55 +79,16 @@ public class JBroTableModel extends AbstractTableModel {
    * @throws ClassCastException if addTo points to a regular column (not a group)
    */
   public void addColumn( String addTo, IModelFieldGroup column ) throws IllegalArgumentException, ClassCastException {
-    if ( column == null )
-      return;
-    int idx[] = addTo == null ? null : data.getIndexOfModelFieldGroup( addTo );
-    if ( idx != null && idx[ 0 ] == -1 )
-      throw new IllegalArgumentException( "Parent group \"" + addTo + "\" not found" );
-    IModelFieldGroup newGroups[];
-    if ( idx == null )
-    {
-      IModelFieldGroup groups[] = ModelFieldGroup.getUpperFieldGroups( data.getFields() );
-      newGroups = new IModelFieldGroup[ groups.length + 1 ];
-      System.arraycopy( groups, 0, newGroups, 0, groups.length );
-      newGroups[ groups.length ] = column;
-    }
-    else
-    {
-      ModelField fields[] = ModelField.copyOfModelFields( data.getFields() );
-      ModelData idxData = new ModelData( fields );
-      ModelFieldGroup group = ( ModelFieldGroup )idxData.getFieldGroups().get( idx[ 1 ] )[ idx[ 0 ] ];
-      group.withChild( column );
-      newGroups = ModelFieldGroup.getUpperFieldGroups( fields );
-    }
-    ModelField fields[] = ModelFieldGroup.getBottomFields( newGroups );
-    ModelData newData = new ModelData( fields );
-    ModelRow rows[] = data.getRows();
-    if ( rows != null )
-    {
-      fields = ModelFieldGroup.getBottomFields( new IModelFieldGroup[]{ column } );
-      if ( fields.length == 0 )
-        throw new IllegalArgumentException( "No columns found in column group \"" + column.getIdentifier() + '"' );
-      int colFromIncl = newData.getIndexOfModelField( fields[ 0 ].getIdentifier() );
-      int colToExcl = colFromIncl + column.getColspan();
-      int newLength = newData.getFieldsCount();
-      ModelRow newRows[] = new ModelRow[ rows.length ];
-      for ( int i = 0; i < rows.length; i++ )
-      {
-        ModelRow newRow = new ModelRow( newLength );
-        newRows[ i ] = newRow;
-        Object values[] = rows[ i ].getValues();
-        if ( values == null || values.length == 0 )
-          continue;
-        Object newValues[] = newRow.getValues();
-        if ( colFromIncl > 0 )
-          System.arraycopy( values, 0, newValues, 0, colFromIncl );
-        if ( colFromIncl < values.length )
-          System.arraycopy( values, colFromIncl, newValues, colToExcl, values.length - colFromIncl );
-      }
-      newData.setRows( newRows );
-    }
-    setData( newData );
+    setData( data.withField( addTo, column ) );
+  }
+
+  /**
+   * Remove a given column (or group)
+   * @param id identifier of a column to be removed
+   * @throws IllegalArgumentException when no column found with a given id
+   */
+  public void removeColumn( String id ) throws IllegalArgumentException {
+    setData( data.withoutField( id ) );
   }
 
   @Override

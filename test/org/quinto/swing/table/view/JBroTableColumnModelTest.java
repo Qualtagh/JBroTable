@@ -488,12 +488,35 @@ public class JBroTableColumnModelTest {
   }
   
   @Test( timeout = 1000L )
+  public void removeRow() {
+    JBroTableModel model = table.getModel();
+    int rc = model.getRowCount();
+    ModelRow rowAfter = data.getRows()[ 5 ];
+    ModelRow rowBefore = data.getRows()[ 2 ];
+    model.removeRow( 3 );
+    assertEquals( rc - 1, model.getRowCount() );
+    model.removeRow( 0 );
+    assertEquals( rc - 2, model.getRowCount() );
+    assertEquals( rowAfter, data.getRows()[ 3 ] );
+    assertEquals( rowBefore, data.getRows()[ 1 ] );
+  }
+  
+  @Test( timeout = 1000L )
   public void addColumn() {
     JBroTableModel model = table.getModel();
     int fc = data.getFieldsCount();
     model.addColumn( "H", new ModelFieldGroup( "NEW", "New" ).withChild( new ModelField( "CHILD", "Child" ) ) );
     assertTrue( model.getData() != data );
     assertEquals( fc + 1, model.getData().getFieldsCount() );
+  }
+  
+  @Test( timeout = 1000L )
+  public void removeColumn() {
+    JBroTableModel model = table.getModel();
+    int fc = data.getFieldsCount();
+    model.removeColumn( "I" );
+    assertTrue( model.getData() != data );
+    assertEquals( fc - 1, model.getData().getFieldsCount() );
   }
   
   public static void main( String args[] ) {

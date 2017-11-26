@@ -143,7 +143,7 @@ public class JBroTableHeader extends JTableHeader {
     return getUI().getRowHeight( level );
   }
   
-  public int getRowAtPoint( Point p ) {
+  public int rowAtPoint( Point p ) {
     return getUI().getRowAtPoint( p );
   }
   

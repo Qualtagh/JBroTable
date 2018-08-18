@@ -418,11 +418,6 @@ public class JBroTableHeader extends JTableHeader {
     }
 
     @Override
-    protected boolean isPaintingOrigin() {
-      return JBroTableHeader.this.isPaintingOrigin();
-    }
-
-    @Override
     public boolean isOptimizedDrawingEnabled() {
       return JBroTableHeader.this.isOptimizedDrawingEnabled();
     }

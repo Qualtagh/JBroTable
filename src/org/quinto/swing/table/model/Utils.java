@@ -1,6 +1,5 @@
 package org.quinto.swing.table.model;
 
-import java.awt.FontMetrics;
 import java.awt.Window;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;

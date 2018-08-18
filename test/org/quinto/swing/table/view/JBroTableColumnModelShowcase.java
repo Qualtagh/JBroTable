@@ -29,12 +29,12 @@ import javax.swing.JTable;
 import javax.swing.JTextField;
 import javax.swing.SwingConstants;
 import javax.swing.UIManager;
+import javax.swing.UIManager.LookAndFeelInfo;
 import javax.swing.UnsupportedLookAndFeelException;
 import javax.swing.plaf.metal.DefaultMetalTheme;
 import javax.swing.plaf.metal.MetalLookAndFeel;
 import javax.swing.plaf.metal.MetalTheme;
 import javax.swing.plaf.metal.OceanTheme;
-import javax.swing.plaf.nimbus.NimbusLookAndFeel;
 import javax.swing.table.TableColumn;
 import org.apache.log4j.Logger;
 import org.quinto.swing.table.model.IModelFieldGroup;
@@ -69,9 +69,14 @@ public class JBroTableColumnModelShowcase {
       @Override
       public void actionPerformed( ActionEvent event ) {
         try {
-          if ( laf == 0 )
-            UIManager.setLookAndFeel( NimbusLookAndFeel.class.getName() );
-          else if ( laf == 1 )
+          if ( laf == 0 ) {
+            for ( LookAndFeelInfo info : UIManager.getInstalledLookAndFeels() ) {
+              if ( "Nimbus".equals( info.getName() ) ) {
+                UIManager.setLookAndFeel( info.getClassName() );
+                break;
+              }
+            }
+          } else if ( laf == 1 )
             UIManager.setLookAndFeel( WindowsClassicLookAndFeel.class.getName() );
           else if ( laf == 2 )
             UIManager.setLookAndFeel( WindowsLookAndFeel.class.getName() );

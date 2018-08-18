@@ -324,6 +324,11 @@ public class ModelData implements Serializable {
             }
             return ret;
           }
+
+          @Override
+          public void remove() {
+            throw new UnsupportedOperationException();
+          }
         };
       }
     };
@@ -359,6 +364,11 @@ public class ModelData implements Serializable {
                   list.addLast( child );
             }
             return ret;
+          }
+
+          @Override
+          public void remove() {
+            throw new UnsupportedOperationException();
           }
         };
       }

@@ -60,16 +60,16 @@ Dependencies:
 Sample usage:
 
 ```java
-package org.quinto.swing.table.view;
+package io.github.qualtagh.swing.table.view;
 
 import java.awt.FlowLayout;
 import javax.swing.JFrame;
 import javax.swing.UIManager;
-import org.quinto.swing.table.model.IModelFieldGroup;
-import org.quinto.swing.table.model.ModelData;
-import org.quinto.swing.table.model.ModelField;
-import org.quinto.swing.table.model.ModelFieldGroup;
-import org.quinto.swing.table.model.ModelRow;
+import io.github.qualtagh.swing.table.model.IModelFieldGroup;
+import io.github.qualtagh.swing.table.model.ModelData;
+import io.github.qualtagh.swing.table.model.ModelField;
+import io.github.qualtagh.swing.table.model.ModelFieldGroup;
+import io.github.qualtagh.swing.table.model.ModelRow;
 
 public class Sample {
   public static void main( String args[] ) throws Exception {

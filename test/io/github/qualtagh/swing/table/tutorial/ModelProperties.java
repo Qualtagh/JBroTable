@@ -11,7 +11,7 @@ import io.github.qualtagh.swing.table.model.ModelRow;
 import io.github.qualtagh.swing.table.model.Utils;
 import io.github.qualtagh.swing.table.view.JBroTable;
 
-public class HeaderRowspan {
+public class ModelProperties {
   public static void main( String args[] ) throws Exception {
     Utils.initSimpleConsoleLogger();
     UIManager.setLookAndFeel( UIManager.getSystemLookAndFeelClassName() );

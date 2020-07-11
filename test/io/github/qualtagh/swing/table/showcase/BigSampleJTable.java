@@ -1,4 +1,4 @@
-package io.github.qualtagh.swing.table.view;
+package io.github.qualtagh.swing.table.showcase;
 
 import java.awt.Dimension;
 import java.awt.FlowLayout;

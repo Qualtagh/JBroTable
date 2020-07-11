@@ -1,4 +1,4 @@
-package io.github.qualtagh.swing.table.view;
+package io.github.qualtagh.swing.table.tutorial;
 
 import java.awt.FlowLayout;
 import javax.swing.JFrame;
@@ -9,8 +9,9 @@ import io.github.qualtagh.swing.table.model.ModelField;
 import io.github.qualtagh.swing.table.model.ModelFieldGroup;
 import io.github.qualtagh.swing.table.model.ModelRow;
 import io.github.qualtagh.swing.table.model.Utils;
+import io.github.qualtagh.swing.table.view.JBroTable;
 
-public class TutorialHeaderRowspan {
+public class HeaderRowspan {
   public static void main( String args[] ) throws Exception {
     Utils.initSimpleConsoleLogger();
     UIManager.setLookAndFeel( UIManager.getSystemLookAndFeelClassName() );

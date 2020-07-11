@@ -1,4 +1,4 @@
-package io.github.qualtagh.swing.table.view;
+package io.github.qualtagh.swing.table.tutorial;
 
 import java.awt.Dimension;
 import java.awt.FlowLayout;
@@ -11,8 +11,9 @@ import io.github.qualtagh.swing.table.model.ModelData;
 import io.github.qualtagh.swing.table.model.ModelField;
 import io.github.qualtagh.swing.table.model.ModelFieldGroup;
 import io.github.qualtagh.swing.table.model.ModelRow;
+import io.github.qualtagh.swing.table.view.JBroTable;
 
-public class TutorialFixedColumns {
+public class FixedColumns {
   public static void main( String... args ) throws Exception {
     UIManager.setLookAndFeel( UIManager.getSystemLookAndFeelClassName() );
     

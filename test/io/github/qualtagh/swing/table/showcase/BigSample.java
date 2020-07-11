@@ -1,4 +1,4 @@
-package io.github.qualtagh.swing.table.view;
+package io.github.qualtagh.swing.table.showcase;
 
 import java.awt.Dimension;
 import java.awt.FlowLayout;
@@ -11,6 +11,7 @@ import io.github.qualtagh.swing.table.model.ModelField;
 import io.github.qualtagh.swing.table.model.ModelFieldGroup;
 import io.github.qualtagh.swing.table.model.ModelRow;
 import io.github.qualtagh.swing.table.model.Utils;
+import io.github.qualtagh.swing.table.view.JBroTable;
 
 public class BigSample {
   public static void main( String args[] ) throws Exception {

@@ -1,4 +1,4 @@
-package io.github.qualtagh.swing.table.view;
+package io.github.qualtagh.swing.table.showcase;
 
 import com.sun.java.swing.plaf.motif.MotifLookAndFeel;
 import com.sun.java.swing.plaf.windows.WindowsClassicLookAndFeel;
@@ -43,6 +43,9 @@ import io.github.qualtagh.swing.table.model.ModelField;
 import io.github.qualtagh.swing.table.model.ModelFieldGroup;
 import io.github.qualtagh.swing.table.model.ModelRow;
 import io.github.qualtagh.swing.table.model.Utils;
+import io.github.qualtagh.swing.table.view.CustomTableHeaderRenderer;
+import io.github.qualtagh.swing.table.view.JBroTable;
+import io.github.qualtagh.swing.table.view.JBroTableModel;
 
 public class JBroTableColumnModelShowcase {
   private static final Logger LOGGER = Logger.getLogger( JBroTableColumnModelShowcase.class );

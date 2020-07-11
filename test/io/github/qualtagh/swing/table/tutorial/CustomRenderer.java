@@ -1,25 +1,32 @@
-package io.github.qualtagh.swing.table.view;
+package io.github.qualtagh.swing.table.tutorial;
 
+import java.awt.Color;
+import java.awt.Component;
 import java.awt.FlowLayout;
+import java.awt.Font;
+import java.awt.Graphics;
+import java.awt.GridLayout;
 import javax.swing.JFrame;
+import javax.swing.JLabel;
+import javax.swing.JPanel;
+import javax.swing.SwingConstants;
 import javax.swing.UIManager;
 import io.github.qualtagh.swing.table.model.IModelFieldGroup;
 import io.github.qualtagh.swing.table.model.ModelData;
 import io.github.qualtagh.swing.table.model.ModelField;
 import io.github.qualtagh.swing.table.model.ModelFieldGroup;
 import io.github.qualtagh.swing.table.model.ModelRow;
-import io.github.qualtagh.swing.table.model.ModelSpan;
 import io.github.qualtagh.swing.table.model.Utils;
+import io.github.qualtagh.swing.table.view.CustomTableHeaderRenderer;
+import io.github.qualtagh.swing.table.view.JBroTable;
 
-public class TutorialSpanCells {
+public class CustomRenderer {
   public static void main( String args[] ) throws Exception {
     Utils.initSimpleConsoleLogger();
     UIManager.setLookAndFeel( UIManager.getSystemLookAndFeelClassName() );
     
     IModelFieldGroup groups[] = new IModelFieldGroup[] {
       new ModelField( "USER_ID", "User identifier" ),
-      new ModelField( "FAMILY_ID", "Family identifier" )
-        .withVisible( false ),
       new ModelFieldGroup( "NAME", "Person name" )
         .withChild( new ModelField( "FIRST_NAME", "First name" ) )
         .withChild( new ModelField( "LAST_NAME", "Last name" ) ),
@@ -39,32 +46,36 @@ public class TutorialSpanCells {
     data.setValue( 0, "LAST_NAME", "Doe" );
     data.setValue( 1, "FIRST_NAME", "Jane" );
     data.setValue( 1, "LAST_NAME", "Doe" );
-    data.setValue( 2, "FIRST_NAME", "Anony" );
-    data.setValue( 2, "LAST_NAME", "Mouse" );
-    data.setValue( 3, "FIRST_NAME", "William" );
-    data.setValue( 3, "LAST_NAME", "Perry" );
-    data.setValue( 4, "FIRST_NAME", "Morgan" );
-    data.setValue( 4, "LAST_NAME", "McQueen" );
-    data.setValue( 5, "FIRST_NAME", "Vanessa" );
-    data.setValue( 5, "LAST_NAME", "McQueen" );
-    data.setValue( 6, "FIRST_NAME", "Albert" );
-    data.setValue( 6, "LAST_NAME", "Newmann" );
-    data.setValue( 7, "FIRST_NAME", "John" );
-    data.setValue( 7, "LAST_NAME", "Goode" );
-    data.setValue( 8, "FIRST_NAME", "William" );
-    data.setValue( 8, "LAST_NAME", "Key" );
-    data.setValue( 9, "FIRST_NAME", "Robert" );
-    data.setValue( 9, "LAST_NAME", "Peterson" );
-    
-    for ( int i = 0; i < rows.length; i++ )
-      data.setValue( i, "FAMILY_ID", i );
-    data.setValue( 1, "FAMILY_ID", 0 );
     
     JBroTable table = new JBroTable( data );
-    table.setAutoCreateRowSorter( true );
     
-    table.setUI( new JBroTableUI()
-      .withSpan( new ModelSpan( "FAMILY_ID", "LAST_NAME" ).withColumns( "LAST_NAME", "PHONE" ) ) );
+    final JPanel p = new JPanel( new GridLayout( 1, 1 ) ) {
+      @Override
+      public void paint( Graphics g ) {
+        super.paint( g );
+        g.setColor( new Color( 220, 50, 50, 50 ) );
+        g.fillRect( 0, 0, getWidth(), getHeight() );
+      }
+    };
+    
+    table.getTableHeader().getUI().setCustomRenderer( new CustomTableHeaderRenderer() {
+      @Override
+      public Component getTableCellRendererComponent( Component originalComponent, JBroTable table, Object value, boolean isSelected, boolean hasFocus, boolean isDragged, int row, int viewColumn, int modelColumn, IModelFieldGroup dataField ) {
+        if ( dataField == null || !( originalComponent instanceof JLabel ) )
+          return originalComponent;
+        JLabel ret = ( JLabel )originalComponent;
+        String fieldName = dataField.getIdentifier();
+        ret.setHorizontalAlignment( "LAST_NAME".equals( fieldName ) ? SwingConstants.RIGHT : SwingConstants.LEFT );
+        ret.setFont( ret.getFont().deriveFont( "NAME".equals( fieldName ) ? Font.BOLD : Font.PLAIN ) );
+        ret.setOpaque( !"USER_ID".equals( fieldName ) );
+        if ( "USER_ID".equals( fieldName ) ) {
+          if ( ret.getParent() != p )
+            p.add( ret );
+          return p;
+        }
+        return ret;
+      }
+    } );
     
     JFrame frame = new JFrame( "Test" );
     frame.setDefaultCloseOperation( JFrame.EXIT_ON_CLOSE );

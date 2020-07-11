@@ -1,4 +1,4 @@
-package io.github.qualtagh.swing.table.view;
+package io.github.qualtagh.swing.table.tutorial;
 
 import java.awt.FlowLayout;
 import javax.swing.JFrame;
@@ -11,9 +11,12 @@ import io.github.qualtagh.swing.table.model.ModelFieldGroup;
 import io.github.qualtagh.swing.table.model.ModelRow;
 import io.github.qualtagh.swing.table.model.ModelSpan;
 import io.github.qualtagh.swing.table.model.Utils;
+import io.github.qualtagh.swing.table.view.JBroPredefinedRowSorter;
 import io.github.qualtagh.swing.table.view.JBroPredefinedRowSorter.SortKey;
+import io.github.qualtagh.swing.table.view.JBroTable;
+import io.github.qualtagh.swing.table.view.JBroTableUI;
 
-public class TutorialAdvancedSpanCells {
+public class AdvancedSpanCells {
   public static void main( String args[] ) throws Exception {
     Utils.initSimpleConsoleLogger();
     UIManager.setLookAndFeel( UIManager.getSystemLookAndFeelClassName() );

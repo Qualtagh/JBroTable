@@ -407,7 +407,7 @@ public class JBroTableHeaderUI extends BasicTableHeaderUI {
             g.fillRect( cellRect.x, cellRect.y, cellRect.width, headerHeight - cellRect.y );
             draggedColumnMet = true;
             doNotPaintCells = true;
-          } else if ( !doNotPaintCells && ( columnParent.getY() >= rMin || level >= rMin ) )
+          } else if ( !doNotPaintCells )
             paintCell( g, cellRect, columnParent );
           if ( columnParent != column ) {
             cellRect.y += cellRect.height;

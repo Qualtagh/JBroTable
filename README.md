@@ -17,6 +17,8 @@ Supported Look & Feels:
 Tested on Windows 2003, Vista, 7, 8, 10 with standard (Luna, Aero, Metro) and with classic themes. Tested on OpenSUSE 11 with GNOME (GTK+ 2). Tested on Mac OS X 10.8.
 
 Supported features (original StackOverflow answer):
+- Windows Classic and MacOS Aqua Look & Feels
+- Support for 2 rows in a header
 - Stops dragging a column at table end
 - Stops dragging a column at columns group end
 
@@ -57,7 +59,7 @@ Dependencies:
 
 Getting started:
 - Ant: [download latest release](https://github.com/Qualtagh/JBroTable/releases/latest) (ready to use jar file)
-- Maven: add the following dependency to your pom.xml:
+- Maven: add the following dependency to your `pom.xml`:
 
 ```xml
 <dependency>

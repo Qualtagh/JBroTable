@@ -60,11 +60,11 @@ Getting started:
 - Maven: add the following dependency to your pom.xml:
 
 ```
-        <dependency>
-            <groupId>io.github.qualtagh.swing.table</groupId>
-            <artifactId>JBroTable</artifactId>
-            <version>2.0.1</version>
-        </dependency>
+<dependency>
+  <groupId>io.github.qualtagh.swing.table</groupId>
+  <artifactId>JBroTable</artifactId>
+  <version>2.0.1</version>
+</dependency>
 ```
 
 Sample usage:

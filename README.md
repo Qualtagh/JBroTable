@@ -59,7 +59,7 @@ Getting started:
 - Ant: [download latest release](https://github.com/Qualtagh/JBroTable/releases/latest) (ready to use jar file)
 - Maven: add the following dependency to your pom.xml:
 
-```
+```xml
 <dependency>
   <groupId>io.github.qualtagh.swing.table</groupId>
   <artifactId>JBroTable</artifactId>

@@ -55,7 +55,17 @@ Dependencies:
 - Apache Log4J
 - JUnit (for tests only)
 
-[__Animated demo__](https://github.com/Qualtagh/JBroTable/wiki/Animated-demo) (2.5M)
+Getting started:
+- Ant: [download latest release](https://github.com/Qualtagh/JBroTable/releases/latest) (ready to use jar file)
+- Maven: add the following dependency to your pom.xml:
+
+```
+        <dependency>
+            <groupId>io.github.qualtagh.swing.table</groupId>
+            <artifactId>JBroTable</artifactId>
+            <version>2.0.1</version>
+        </dependency>
+```
 
 Sample usage:
 
@@ -70,6 +80,7 @@ import io.github.qualtagh.swing.table.model.ModelData;
 import io.github.qualtagh.swing.table.model.ModelField;
 import io.github.qualtagh.swing.table.model.ModelFieldGroup;
 import io.github.qualtagh.swing.table.model.ModelRow;
+import io.github.qualtagh.swing.table.view.JBroTable;
 
 public class Sample {
   public static void main( String args[] ) throws Exception {
@@ -130,7 +141,7 @@ Result (Windows 8 theme):
 
 [More screenshots](https://github.com/Qualtagh/JBroTable/wiki/Screenshots) with different L&Fs are available at wiki.
 
-[Download](https://github.com/Qualtagh/JBroTable/releases/latest) the latest version (ready to use jar file).
+[__Animated demo__](https://github.com/Qualtagh/JBroTable/wiki/Animated-demo) (2.5M)
 
 Take a tour through [tutorials](https://github.com/Qualtagh/JBroTable/wiki/Tutorials) page for more complicated examples.
 
